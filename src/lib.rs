@@ -8,11 +8,23 @@ use std::path::PathBuf;
 #[command(version, about, long_about = None)]
 pub struct Cli {
     /// A text file containing GTF paths.
-    #[arg(short, long, value_name = "*.txt", value_parser = Cli::parse_gtf_paths)]
+    #[arg(
+        short, 
+        long, 
+        value_name = "*.txt", 
+        required = true, 
+        value_parser = Cli::parse_gtf_paths
+    )]
     gtf_paths: Vec<PathBuf>,
 
     /// Directory to store the outputted GTFs with unified transcripts.
-    #[arg(short, long, value_name = "/output/dir/", value_parser = Cli::parse_output_path)]
+    #[arg(
+        short, 
+        long, 
+        value_name = "/output/dir/", 
+        required = true, 
+        value_parser = Cli::parse_output_path
+    )]
     output_path: PathBuf,
 }
 
