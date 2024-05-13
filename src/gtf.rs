@@ -6,19 +6,20 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 struct GtfRecord {
-    chr: String,
+    feature: String,
     strand: String,
+    chr: String,
     start: String,
     end: String,
     transcript_id: String,
 }
 
 impl GtfRecord {
-    fn from(line: &str, transcript_re: &Regex) -> GtfRecord {
-        let line_split = line.split('\t').collect::<Vec<&str>>();
+    fn from(line_split: &Vec<&str>, transcript_re: &Regex) -> GtfRecord {
         // TODO: Handle errors.
         GtfRecord {
             chr: line_split[0].to_owned(),
+            feature: line_split[2].to_owned(),
             strand: line_split[6].to_owned(),
             start: line_split[3].to_owned(),
             end: line_split[4].to_owned(),
@@ -31,11 +32,8 @@ impl GtfRecord {
                 .to_owned(),
         }
     }
-    fn is_exon(line: &str) -> bool {
-        // TODO: Is there a chance different transcript can have the same
-        // UTRs but different CDSs? I guess not, but if so, we would need to
-        // compare CDS information.
-        line.contains("\texon\t")
+    fn is_exon(line_split: &Vec<&str>) -> bool {
+        line_split[2] == "exon"
     }
 }
 
@@ -51,8 +49,10 @@ fn load_gtf(gtf_path: PathBuf) -> HashMap<(String, String, String), HashSet<Stri
 
     for line in reader.lines() {
         let line = line.unwrap();
-        if GtfRecord::is_exon(&line) {
-            let record = GtfRecord::from(&line, &transcript_re);
+        let line_split = line.split('\t').collect::<Vec<&str>>();
+
+        if GtfRecord::is_exon(&line_split) {
+            let record = GtfRecord::from(&line_split, &transcript_re);
             let transcript = gtf_transcripts
                 .entry((record.chr, record.strand, record.transcript_id))
                 .or_default();
@@ -69,17 +69,20 @@ fn load_gtf(gtf_path: PathBuf) -> HashMap<(String, String, String), HashSet<Stri
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn test_gtfrecord_from() {
         let line = r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#;
+        let line_split = line.split('\t').collect::<Vec<&str>>();
         let transcript_re = Regex::new(r#"transcript_id "([^"]+)"#).unwrap();
 
         assert_eq!(
-            GtfRecord::from(line, &transcript_re),
+            GtfRecord::from(&line_split, &transcript_re),
             GtfRecord {
-                chr: String::from("chr1"),
+                feature: String::from("exon"),
                 strand: String::from("+"),
+                chr: String::from("chr1"),
                 start: String::from("1"),
                 end: String::from("2"),
                 transcript_id: String::from("A"),
@@ -87,22 +90,21 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_gtfrecord_is_exon() {
-        // TODO: use parameterization.
-        let exon = r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#;
-        let cds = r#"chr1	RefSeq	CDS	1	2	.	+	.	transcript_id "A";"#;
-        let transcript = r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A";"#;
+    #[rstest]
+    #[case(r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#, true)]
+    #[case(r#"chr1	RefSeq	CDS	1	2	.	+	.	transcript_id "A";"#, false)]
+    #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A"#, false)]
+    fn test_gtfrecord_is_exon(#[case] line: &str, #[case] expected: bool) {
+        let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        assert!(GtfRecord::is_exon(exon));
-        assert!(!GtfRecord::is_exon(cds));
-        assert!(!GtfRecord::is_exon(transcript));
+        assert_eq!(GtfRecord::is_exon(&line_split), expected);
     }
 
     #[test]
     fn test_load_gtf() {
         let mut expected_transcripts: HashMap<(String, String, String), HashSet<String>> =
             HashMap::new();
+
         expected_transcripts.insert(
             (
                 String::from("chr2"),
