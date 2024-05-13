@@ -94,7 +94,7 @@ mod tests {
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
         // Not a directory.
-        let result = Cli::parse_output_path("tests/data/gtf_paths_unreadable.txt");
+        let result = Cli::parse_output_path("tests/data/gtf_paths_missing_gtf.txt");
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
         let result = Cli::parse_output_path("tests/data/");
