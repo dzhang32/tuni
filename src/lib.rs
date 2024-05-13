@@ -1,3 +1,6 @@
+
+mod gtf;
+
 use clap::Parser;
 use std::error::Error;
 use std::fs;
@@ -77,7 +80,7 @@ mod tests {
         let result = Cli::parse_gtf_paths("does_not_exist.txt");
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
-        let result = Cli::parse_gtf_paths("tests/data/gtf_paths_unreadable.txt");
+        let result = Cli::parse_gtf_paths("tests/data/gtf_paths_missing_gtf.txt");
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
         let result = Cli::parse_gtf_paths("tests/data/gtf_paths.txt");
