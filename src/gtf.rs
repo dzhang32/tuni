@@ -15,7 +15,7 @@ struct GtfRecord {
 }
 
 impl GtfRecord {
-    fn from(line_split: &Vec<&str>, transcript_re: &Regex) -> GtfRecord {
+    fn from(line_split: &[&str], transcript_re: &Regex) -> GtfRecord {
         // TODO: Handle errors.
         GtfRecord {
             chr: line_split[0].to_owned(),
@@ -32,7 +32,7 @@ impl GtfRecord {
                 .to_owned(),
         }
     }
-    fn is_exon(line_split: &Vec<&str>) -> bool {
+    fn is_exon(line_split: &[&str]) -> bool {
         line_split[2] == "exon"
     }
 }
