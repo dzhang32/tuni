@@ -1,4 +1,4 @@
-chr1	test	exon	1	2	.	-	.	transcript_id "identical_to_A_transcript.1"; gene_id "A_gene";
-chr1	test	exon	11	12	.	-	.	transcript_id "identical_to_A_transcript.1"; gene_id "A_gene";
-chr3	test	exon	41	42	.	+	.	transcript_id "B_transcript.1"; gene_id "B_gene";
-chr3	test	exon	51	52	.	+	.	transcript_id "B_transcript.1"; gene_id "B_gene";
+chr1	test	exon	1	2	.	-	.	transcript_id "A_2"; gene_id "A_2";
+chr1	test	exon	11	12	.	-	.	transcript_id "A_2"; gene_id "A_2";
+chr3	test	exon	41	42	.	+	.	transcript_id "C"; gene_id "C";
+chr3	test	exon	51	52	.	+	.	transcript_id "C"; gene_id "C";

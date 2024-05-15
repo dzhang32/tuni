@@ -109,18 +109,7 @@ mod tests {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
-            String::from("B_transcript.1"),
-            BTreeSet::from([
-                String::from("chr2"),
-                String::from("+"),
-                String::from("21"),
-                String::from("22"),
-                String::from("31"),
-                String::from("32"),
-            ]),
-        );
-        expected_transcripts.insert(
-            String::from("A_transcript.1"),
+            String::from("A"),
             BTreeSet::from([
                 String::from("chr1"),
                 String::from("-"),
@@ -128,6 +117,18 @@ mod tests {
                 String::from("12"),
                 String::from("11"),
                 String::from("2"),
+            ]),
+        );
+
+        expected_transcripts.insert(
+            String::from("B"),
+            BTreeSet::from([
+                String::from("chr2"),
+                String::from("+"),
+                String::from("21"),
+                String::from("22"),
+                String::from("31"),
+                String::from("32"),
             ]),
         );
 
