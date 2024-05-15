@@ -1,1 +1,1 @@
-tests/data/test.gtf
+tests/data/test_sample_1.gtf
