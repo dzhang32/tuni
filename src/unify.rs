@@ -1,13 +1,13 @@
 use crate::gtf::{TranscriptId, TranscriptSignature};
 use std::collections::{HashMap, HashSet};
 
-pub type SampleTranscriptIds = HashSet<(String, String)>;
+pub type SampleTranscriptId = (String, String);
 pub type UnifiedId = String;
 const UNIFIED_ID_PREFIX: &str = "tuni_";
 
 struct TranscriptUnifier {
-    transcripts: HashMap<TranscriptSignature, SampleTranscriptIds>,
-    unified_transcripts: HashMap<TranscriptId, UnifiedId>,
+    transcripts: HashMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
+    unified_transcripts: HashMap<SampleTranscriptId, UnifiedId>,
 }
 
 impl TranscriptUnifier {
@@ -34,26 +34,25 @@ impl TranscriptUnifier {
 mod tests {
     use super::*;
     use crate::gtf::load_gtf;
+    use rstest::{fixture, rstest};
     use std::{collections::BTreeSet, path::PathBuf};
 
-    #[test]
-    fn test_add_transcripts() {
-        let mut transcript_unifier = TranscriptUnifier::new();
-        let mut gtf_transcripts = load_gtf(PathBuf::from("tests/data/test_sample_1.gtf"));
-        transcript_unifier.add_transcripts("test_sample_1.gtf".to_string(), &mut gtf_transcripts);
-
-        let transcript_signature_a = BTreeSet::from([
+    #[fixture]
+    fn test_transcripts() -> HashMap<TranscriptSignature, HashSet<SampleTranscriptId>> {
+        HashMap::from([
+            (
+                BTreeSet::from([
             "chr1".to_string(),
             "-".to_string(),
             "1".to_string(),
             "11".to_string(),
             "12".to_string(),
             "2".to_string(),
-        ]);
-        let mut expected = HashMap::from([
-            (
-                transcript_signature_a.clone(),
-                HashSet::from([("test_sample_1.gtf".to_string(), "A".to_string())]),
+                ]),
+                HashSet::from([
+                    ("test_sample_1.gtf".to_string(), "A".to_string()),
+                    ("test_sample_2.gtf".to_string(), "A_2".to_string()),
+                ]),
             ),
             (
                 BTreeSet::from([
@@ -66,20 +65,7 @@ mod tests {
                 ]),
                 HashSet::from([("test_sample_1.gtf".to_string(), "B".to_string())]),
             ),
-        ]);
-
-        assert_eq!(transcript_unifier.transcripts, expected);
-
-        // Test unification works correctly across multiple samples.
-        let mut gtf_transcripts = load_gtf(PathBuf::from("tests/data/test_sample_2.gtf"));
-        transcript_unifier.add_transcripts("test_sample_2.gtf".to_string(), &mut gtf_transcripts);
-
-        expected
-            .get_mut(&transcript_signature_a)
-            .unwrap()
-            .insert(("test_sample_2.gtf".to_string(), "A_2".to_string()));
-
-        expected.insert(
+            (
             BTreeSet::from([
                 "chr3".to_string(),
                 "+".to_string(),
@@ -89,8 +75,26 @@ mod tests {
                 "52".to_string(),
             ]),
             HashSet::from([("test_sample_2.gtf".to_string(), "C".to_string())]),
-        );
+            ),
+        ])
+    }
 
-        assert_eq!(transcript_unifier.transcripts, expected);
+    #[rstest]
+    fn test_add_transcripts(
+        test_transcripts: HashMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
+    ) {
+        let mut transcript_unifier = TranscriptUnifier::new();
+        let gtf_paths = [
+            PathBuf::from("tests/data/test_sample_1.gtf"),
+            PathBuf::from("tests/data/test_sample_2.gtf"),
+        ];
+
+        for gtf_path in gtf_paths {
+            let mut gtf_transcripts = load_gtf(&gtf_path);
+            let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
+            transcript_unifier.add_transcripts(gtf_file_name.to_string(), &mut gtf_transcripts);
+        }
+
+        assert_eq!(transcript_unifier.transcripts, test_transcripts);
     }
 }

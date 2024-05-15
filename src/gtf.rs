@@ -41,7 +41,7 @@ impl GtfRecord {
     }
 }
 
-pub fn load_gtf(gtf_path: PathBuf) -> HashMap<TranscriptId, TranscriptSignature> {
+pub fn load_gtf(gtf_path: &PathBuf) -> HashMap<TranscriptId, TranscriptSignature> {
     // We have already checked GTFs exist/are readable during cli parsing.
     let gtf = File::open(gtf_path).unwrap();
 
@@ -133,7 +133,7 @@ mod tests {
         );
 
         assert_eq!(
-            load_gtf(PathBuf::from("tests/data/test_sample_1.gtf")),
+            load_gtf(&PathBuf::from("tests/data/test_sample_1.gtf")),
             expected_transcripts
         )
     }
