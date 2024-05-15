@@ -1,8 +1,11 @@
 use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
+
+pub type TranscriptId = String;
+pub type TranscriptSignature = BTreeSet<String>;
 
 #[derive(Debug, PartialEq)]
 struct GtfRecord {
@@ -17,6 +20,7 @@ struct GtfRecord {
 impl GtfRecord {
     fn from(line_split: &[&str], transcript_re: &Regex) -> GtfRecord {
         // TODO: Handle errors.
+        // TODO: Use something other than String?
         GtfRecord {
             chr: line_split[0].to_owned(),
             feature: line_split[2].to_owned(),
@@ -37,7 +41,7 @@ impl GtfRecord {
     }
 }
 
-fn load_gtf(gtf_path: PathBuf) -> HashMap<(String, String, String), HashSet<String>> {
+pub fn load_gtf(gtf_path: PathBuf) -> HashMap<TranscriptId, TranscriptSignature> {
     // We have already checked GTFs exist/are readable during cli parsing.
     let gtf = File::open(gtf_path).unwrap();
 
@@ -45,7 +49,7 @@ fn load_gtf(gtf_path: PathBuf) -> HashMap<(String, String, String), HashSet<Stri
     let reader = BufReader::new(gtf);
     let transcript_re = Regex::new(r#"transcript_id "([^"]+)"#).unwrap();
     // TODO: better name?
-    let mut gtf_transcripts: HashMap<(String, String, String), HashSet<String>> = HashMap::new();
+    let mut gtf_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
     for line in reader.lines() {
         let line = line.unwrap();
@@ -54,15 +58,15 @@ fn load_gtf(gtf_path: PathBuf) -> HashMap<(String, String, String), HashSet<Stri
         if GtfRecord::is_exon(&line_split) {
             let record = GtfRecord::from(&line_split, &transcript_re);
             let transcript = gtf_transcripts
-                .entry((record.chr, record.strand, record.transcript_id))
-                .or_default();
+                .entry(record.transcript_id)
+                .or_insert(BTreeSet::from([record.chr, record.strand]));
 
             transcript.insert(record.start);
             transcript.insert(record.end);
         }
     }
 
-    println!("{:?}", gtf_transcripts);
+    // println!("{:?}", gtf_transcripts);
     gtf_transcripts
 }
 
@@ -102,16 +106,13 @@ mod tests {
 
     #[test]
     fn test_load_gtf() {
-        let mut expected_transcripts: HashMap<(String, String, String), HashSet<String>> =
-            HashMap::new();
+        let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
-            (
+            String::from("B_transcript.1"),
+            BTreeSet::from([
                 String::from("chr2"),
                 String::from("+"),
-                String::from("B_transcript.1"),
-            ),
-            HashSet::from([
                 String::from("21"),
                 String::from("22"),
                 String::from("31"),
@@ -119,12 +120,10 @@ mod tests {
             ]),
         );
         expected_transcripts.insert(
-            (
+            String::from("A_transcript.1"),
+            BTreeSet::from([
                 String::from("chr1"),
                 String::from("-"),
-                String::from("A_transcript.1"),
-            ),
-            HashSet::from([
                 String::from("1"),
                 String::from("12"),
                 String::from("11"),
@@ -133,7 +132,7 @@ mod tests {
         );
 
         assert_eq!(
-            load_gtf(PathBuf::from("tests/data/test.gtf")),
+            load_gtf(PathBuf::from("tests/data/test_sample_1.gtf")),
             expected_transcripts
         )
     }
