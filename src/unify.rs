@@ -1,5 +1,5 @@
 use crate::gtf::{TranscriptId, TranscriptSignature};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 pub type SampleTranscriptId = (String, String);
 pub type UnifiedId = String;
@@ -7,14 +7,14 @@ pub type UnifiedId = String;
 const UNIFIED_ID_PREFIX: &str = "tuni_";
 
 pub struct TranscriptUnifier {
-    transcripts: HashMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
+    transcripts: BTreeMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
     unified_transcripts: HashMap<SampleTranscriptId, UnifiedId>,
 }
 
 impl TranscriptUnifier {
     pub fn new() -> TranscriptUnifier {
         TranscriptUnifier {
-            transcripts: HashMap::new(),
+            transcripts: BTreeMap::new(),
             unified_transcripts: HashMap::new(),
         }
     }
@@ -24,9 +24,13 @@ impl TranscriptUnifier {
         gtf_file_name: String,
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
-        for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
-            let sample_transcript_id = self.transcripts.entry(transcript_signature).or_default();
-            sample_transcript_id.insert((gtf_file_name.clone(), transcript_id));
+        // TODO: optimise clones.
+        for (transcript_id, transcript_signature) in gtf_transcripts {
+            let sample_transcript_id = self
+                .transcripts
+                .entry(transcript_signature.clone())
+                .or_default();
+            sample_transcript_id.insert((gtf_file_name.clone(), transcript_id.clone()));
         }
     }
 
@@ -66,7 +70,7 @@ mod tests {
             transcript_unifier.add_transcripts(gtf_file_name.to_string(), &mut gtf_transcripts);
         }
 
-        let expected_transcripts = HashMap::from([
+        let expected_transcripts = BTreeMap::from([
             (
                 BTreeSet::from([
                     "chr1".to_string(),
@@ -118,28 +122,28 @@ mod tests {
             .into_keys()
             .collect::<Vec<SampleTranscriptId>>();
 
-        // into_keys() returns keys in an arbitary order.
-        // sort() ensures keys match the order of this for comparison.
-        sample_transcript_ids.sort();
+        let expected_unified_transcripts = HashMap::from([
+            (
+                ("test_sample_1.gtf".to_string(), "A".to_string()),
+                "tuni_2".to_string(),
+            ),
+            (
+                ("test_sample_1.gtf".to_string(), "B".to_string()),
+                "tuni_0".to_string(),
+            ),
+            (
+                ("test_sample_2.gtf".to_string(), "A_2".to_string()),
+                "tuni_2".to_string(),
+            ),
+            (
+                ("test_sample_2.gtf".to_string(), "C".to_string()),
+                "tuni_1".to_string(),
+            ),
+        ]);
 
-        let expected_sample_transcript_ids = vec![
-            ("test_sample_1.gtf".to_string(), "A".to_string()),
-            ("test_sample_1.gtf".to_string(), "B".to_string()),
-            ("test_sample_2.gtf".to_string(), "A_2".to_string()),
-            ("test_sample_2.gtf".to_string(), "C".to_string()),
-        ];
-
-        assert_eq!(sample_transcript_ids, expected_sample_transcript_ids);
-
-        // A and A_2 are the same transcript from different samples.
-        // They should be assigned the same unified ID.
         assert_eq!(
-            transcript_unifier
-                .unified_transcripts
-                .get(&("test_sample_1.gtf".to_string(), "A".to_string())),
-            transcript_unifier
-                .unified_transcripts
-                .get(&("test_sample_2.gtf".to_string(), "A_2".to_string()))
+            transcript_unifier.unified_transcripts,
+            expected_unified_transcripts
         );
     }
 }

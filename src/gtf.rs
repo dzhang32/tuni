@@ -7,6 +7,8 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 
 pub type TranscriptId = String;
+// Must be a BTreesSet as 1. we want to use it as a key later on and 2.
+// We want values to be unique.
 pub type TranscriptSignature = BTreeSet<String>;
 
 const TRANSCRIPT_ID_RE: &str = r#"transcript_id "([^"]+)"#;
