@@ -60,6 +60,9 @@ mod tests {
     #[test]
     fn test_add_transcripts() {
         let mut transcript_unifier = TranscriptUnifier::new();
+
+        // Sample 2 is an unsorted GTF, ensuring unification works
+        // regardless if input is sorted.
         let gtf_paths = [
             PathBuf::from("tests/data/test_sample_1.gtf"),
             PathBuf::from("tests/data/test_sample_2.gtf"),
