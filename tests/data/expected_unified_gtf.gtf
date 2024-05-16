@@ -1,0 +1,4 @@
+chr1	test	exon	1	2	.	-	.	transcript_id "A"; gene_id "A"; tuni_id "tuni_1";
+chr1	test	exon	11	12	.	-	.	transcript_id "A"; gene_id "A"; tuni_id "tuni_1";
+chr2	test	exon	21	22	.	+	.	transcript_id "B"; gene_id "B"; tuni_id "tuni_0";
+chr2	test	exon	31	32	.	+	.	transcript_id "B"; gene_id "B"; tuni_id "tuni_0";

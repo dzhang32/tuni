@@ -103,7 +103,7 @@ fn write_unified_gtf(gtf_path: &Path, output_dir: &Path, transcript_unifier: Tra
         if let Some(m) = transcript_id {
             let unified_id = transcript_unifier
                 .get_unified_id(&(gtf_file_name.to_owned(), m.as_str().to_owned()));
-            line.push_str(&format!(r#"tuni_id "{}";"#, unified_id));
+            line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
         }
 
         // TODO: Handle errors or check CLI when parsing.
@@ -117,6 +117,7 @@ mod tests {
 
     use super::*;
     use rstest::rstest;
+    use std::fs::read_to_string;
     use tempfile::tempdir;
 
     #[test]
@@ -191,8 +192,12 @@ mod tests {
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();
-        let file_path = temp_dir.path().join("test_sample_1.tuni.gtf");
+        let output_path = temp_dir.path().join("test_sample_1.tuni.gtf");
 
-        write_unified_gtf(&gtf_path, &PathBuf::from("tests/data/"), transcript_unifier);
+        write_unified_gtf(&gtf_path, temp_dir.path(), transcript_unifier);
+        assert_eq!(
+            read_to_string(output_path).unwrap(),
+            read_to_string(PathBuf::from("tests/data/expected_unified_gtf.gtf")).unwrap()
+        );
     }
 }
