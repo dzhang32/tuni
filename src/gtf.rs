@@ -78,7 +78,11 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
     gtf_transcripts
 }
 
-fn write_unified_gtf(gtf_path: &Path, output_dir: &Path, transcript_unifier: TranscriptUnifier) {
+pub fn write_unified_gtf(
+    gtf_path: &Path,
+    output_dir: &Path,
+    transcript_unifier: &TranscriptUnifier,
+) {
     // TODO: switch to different String type or stick with OsString?
     let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
     let mut output_path = output_dir.to_path_buf();
@@ -86,7 +90,7 @@ fn write_unified_gtf(gtf_path: &Path, output_dir: &Path, transcript_unifier: Tra
     output_path.set_extension("tuni.gtf");
 
     // TODO: Handle errors or check CLI when parsing.
-    let mut output_unified_gtf = File::create(output_path).expect("Unable to create file");
+    let output_unified_gtf = File::create(output_path).expect("Unable to create file");
     let mut writer = BufWriter::new(output_unified_gtf);
 
     let gtf = File::open(gtf_path).unwrap();
@@ -178,7 +182,7 @@ mod tests {
         );
 
         assert_eq!(
-            read_gtf(&PathBuf::from("tests/data/test_sample_1.gtf")),
+            read_gtf(&PathBuf::from("tests/data/unit/test_sample_1.gtf")),
             expected_transcripts
         )
     }
@@ -186,7 +190,7 @@ mod tests {
     #[test]
     fn test_write_unified_gtf() {
         let mut transcript_unifier = TranscriptUnifier::new();
-        let gtf_path = PathBuf::from("tests/data/test_sample_1.gtf");
+        let gtf_path = PathBuf::from("tests/data/unit/test_sample_1.gtf");
         let mut gtf_transcripts = read_gtf(&gtf_path);
         transcript_unifier.add_transcripts("test_sample_1.gtf".to_string(), &mut gtf_transcripts);
         transcript_unifier.unify_transcripts();
@@ -194,10 +198,10 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("test_sample_1.tuni.gtf");
 
-        write_unified_gtf(&gtf_path, temp_dir.path(), transcript_unifier);
+        write_unified_gtf(&gtf_path, temp_dir.path(), &transcript_unifier);
         assert_eq!(
             read_to_string(output_path).unwrap(),
-            read_to_string(PathBuf::from("tests/data/expected_unified_gtf.gtf")).unwrap()
+            read_to_string(PathBuf::from("tests/data/unit/expected_unified_gtf.gtf")).unwrap()
         );
     }
 }

@@ -1,2 +1,0 @@
-tests/data/does_not_exist.gtf
-tests/data/test_sample_1.gtf

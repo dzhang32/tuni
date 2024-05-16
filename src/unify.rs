@@ -64,8 +64,8 @@ mod tests {
         // Sample 2 is an unsorted GTF, ensuring unification works
         // regardless if input is sorted.
         let gtf_paths = [
-            PathBuf::from("tests/data/test_sample_1.gtf"),
-            PathBuf::from("tests/data/test_sample_2.gtf"),
+            PathBuf::from("tests/data/unit/test_sample_1.gtf"),
+            PathBuf::from("tests/data/unit/test_sample_2.gtf"),
         ];
         for gtf_path in gtf_paths {
             let mut gtf_transcripts = read_gtf(&gtf_path);
@@ -118,12 +118,6 @@ mod tests {
         // so we don't know (and cannot test) the exact unified ID that is
         // assigned to each transcript.
         transcript_unifier.unify_transcripts();
-
-        let mut sample_transcript_ids = transcript_unifier
-            .unified_transcripts
-            .clone()
-            .into_keys()
-            .collect::<Vec<SampleTranscriptId>>();
 
         let expected_unified_transcripts = HashMap::from([
             (
