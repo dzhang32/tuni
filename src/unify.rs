@@ -3,22 +3,23 @@ use std::collections::{HashMap, HashSet};
 
 pub type SampleTranscriptId = (String, String);
 pub type UnifiedId = String;
+
 const UNIFIED_ID_PREFIX: &str = "tuni_";
 
-struct TranscriptUnifier {
+pub struct TranscriptUnifier {
     transcripts: HashMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
     unified_transcripts: HashMap<SampleTranscriptId, UnifiedId>,
 }
 
 impl TranscriptUnifier {
-    fn new() -> TranscriptUnifier {
+    pub fn new() -> TranscriptUnifier {
         TranscriptUnifier {
             transcripts: HashMap::new(),
             unified_transcripts: HashMap::new(),
         }
     }
 
-    fn add_transcripts(
+    pub fn add_transcripts(
         &mut self,
         gtf_file_name: String,
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
@@ -29,7 +30,7 @@ impl TranscriptUnifier {
         }
     }
 
-    fn unify_transcripts(&mut self) {
+    pub fn unify_transcripts(&mut self) {
         // TODO: Check if .drain should be used.
         for (i, sample_transcript_ids) in self.transcripts.values_mut().enumerate() {
             for sample_transcript_id in sample_transcript_ids.drain() {
@@ -38,12 +39,17 @@ impl TranscriptUnifier {
             }
         }
     }
+
+    pub fn get_unified_id(&self, sample_transcript_id: &SampleTranscriptId) -> &str {
+        // TODO: Handle errors better.
+        self.unified_transcripts.get(sample_transcript_id).unwrap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gtf::load_gtf;
+    use crate::gtf::read_gtf;
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
@@ -55,7 +61,7 @@ mod tests {
             PathBuf::from("tests/data/test_sample_2.gtf"),
         ];
         for gtf_path in gtf_paths {
-            let mut gtf_transcripts = load_gtf(&gtf_path);
+            let mut gtf_transcripts = read_gtf(&gtf_path);
             let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
             transcript_unifier.add_transcripts(gtf_file_name.to_string(), &mut gtf_transcripts);
         }
