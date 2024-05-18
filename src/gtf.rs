@@ -7,9 +7,45 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 
 pub type TranscriptId = String;
-// Must be a BTreesSet as 1. we want to use it as a key later on and 2.
-// We want values to be unique.
-pub type TranscriptSignature = BTreeSet<String>;
+
+// exon_boundaries and cds_boundaries must be BTreesSets as
+// 1. we want to use TranscriptSignature as a key later on and HashSet is not hashable
+// 2. we want values to be unique.
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TranscriptSignature {
+    chr: String,
+    strand: String,
+    exon_boundaries: BTreeSet<String>,
+    cds_boundaries: BTreeSet<String>,
+}
+
+impl TranscriptSignature {
+    pub fn new(
+        chr: String,
+        strand: String,
+        exon_boundaries: BTreeSet<String>,
+        cds_boundaries: BTreeSet<String>,
+    ) -> TranscriptSignature {
+        TranscriptSignature {
+            chr,
+            strand,
+            exon_boundaries,
+            cds_boundaries,
+        }
+    }
+
+    fn insert_boundary(&mut self, feature: &str, value: String) {
+        match feature {
+            "exon" => self.exon_boundaries.insert(value),
+            "CDS" => self.cds_boundaries.insert(value),
+            // TODO: Handle errors.
+            _ => panic!(
+                "Feature must be one of 'exon' or 'CDS', instead found {}",
+                feature
+            ),
+        };
+    }
+}
 
 const TRANSCRIPT_ID_RE: &str = r#"transcript_id "([^"]+)"#;
 
@@ -39,8 +75,8 @@ impl GtfRecord {
         }
     }
 
-    fn is_exon(line_split: &[&str]) -> bool {
-        line_split[2] == "exon"
+    fn is_exon_or_cds(line_split: &[&str]) -> bool {
+        line_split[2] == "exon" || line_split[2] == "CDS"
     }
 
     fn get_transcript_id<'a>(line_split: &[&'a str], transcript_re: &Regex) -> Option<Match<'a>> {
@@ -63,14 +99,22 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
         let line = line.unwrap();
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        if GtfRecord::is_exon(&line_split) {
+        if GtfRecord::is_exon_or_cds(&line_split) {
             let record = GtfRecord::from(&line_split, &transcript_re);
-            let transcript = gtf_transcripts
-                .entry(record.transcript_id)
-                .or_insert(BTreeSet::from([record.chr, record.strand]));
 
-            transcript.insert(record.start);
-            transcript.insert(record.end);
+            // TODO: Make TranscriptSignature a struct.
+            let transcript_signature =
+                gtf_transcripts
+                    .entry(record.transcript_id)
+                    .or_insert(TranscriptSignature::new(
+                        record.chr,
+                        record.strand,
+                        BTreeSet::new(),
+                        BTreeSet::new(),
+                    ));
+
+            transcript_signature.insert_boundary(&record.feature, record.start);
+            transcript_signature.insert_boundary(&record.feature, record.end);
         }
     }
 
@@ -145,12 +189,12 @@ mod tests {
 
     #[rstest]
     #[case(r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#, true)]
-    #[case(r#"chr1	RefSeq	CDS	1	2	.	+	.	transcript_id "A";"#, false)]
+    #[case(r#"chr1	RefSeq	CDS	1	2	.	+	.	transcript_id "A";"#, true)]
     #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A"#, false)]
     fn test_gtfrecord_is_exon(#[case] line: &str, #[case] expected: bool) {
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        assert_eq!(GtfRecord::is_exon(&line_split), expected);
+        assert_eq!(GtfRecord::is_exon_or_cds(&line_split), expected);
     }
 
     #[test]
@@ -159,26 +203,32 @@ mod tests {
 
         expected_transcripts.insert(
             String::from("A"),
-            BTreeSet::from([
-                String::from("chr1"),
-                String::from("-"),
-                String::from("1"),
-                String::from("12"),
-                String::from("11"),
-                String::from("2"),
-            ]),
+            TranscriptSignature::new(
+                "chr1".to_string(),
+                "-".to_string(),
+                BTreeSet::from([
+                    String::from("1"),
+                    String::from("12"),
+                    String::from("11"),
+                    String::from("2"),
+                ]),
+                BTreeSet::new(),
+            ),
         );
 
         expected_transcripts.insert(
             String::from("B"),
-            BTreeSet::from([
-                String::from("chr2"),
-                String::from("+"),
-                String::from("21"),
-                String::from("22"),
-                String::from("31"),
-                String::from("32"),
-            ]),
+            TranscriptSignature::new(
+                "chr2".to_string(),
+                "+".to_string(),
+                BTreeSet::from([
+                    String::from("21"),
+                    String::from("22"),
+                    String::from("31"),
+                    String::from("32"),
+                ]),
+                BTreeSet::new(),
+            ),
         );
 
         assert_eq!(
@@ -199,9 +249,16 @@ mod tests {
         let output_path = temp_dir.path().join("test_sample_1.tuni.gtf");
 
         write_unified_gtf(&gtf_path, temp_dir.path(), &transcript_unifier);
+        // .collect() as <Vec<&str>> for easier debugging.
         assert_eq!(
-            read_to_string(output_path).unwrap(),
-            read_to_string(PathBuf::from("tests/data/unit/expected_unified_gtf.gtf")).unwrap()
+            read_to_string(output_path)
+                .unwrap()
+                .lines()
+                .collect::<Vec<&str>>(),
+            read_to_string(PathBuf::from("tests/data/unit/expected_unified_gtf.gtf"))
+                .unwrap()
+                .lines()
+                .collect::<Vec<&str>>()
         );
     }
 }

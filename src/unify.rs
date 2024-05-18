@@ -25,11 +25,8 @@ impl TranscriptUnifier {
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
         // TODO: optimise clones.
-        for (transcript_id, transcript_signature) in gtf_transcripts {
-            let sample_transcript_id = self
-                .transcripts
-                .entry(transcript_signature.clone())
-                .or_default();
+        for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
+            let sample_transcript_id = self.transcripts.entry(transcript_signature).or_default();
             sample_transcript_id.insert((gtf_file_name.clone(), transcript_id.clone()));
         }
     }
@@ -75,39 +72,48 @@ mod tests {
 
         let expected_transcripts = BTreeMap::from([
             (
-                BTreeSet::from([
+                TranscriptSignature::new(
                     "chr1".to_string(),
                     "-".to_string(),
-                    "1".to_string(),
-                    "11".to_string(),
-                    "12".to_string(),
-                    "2".to_string(),
-                ]),
+                    BTreeSet::from([
+                        "1".to_string(),
+                        "11".to_string(),
+                        "12".to_string(),
+                        "2".to_string(),
+                    ]),
+                    BTreeSet::new(),
+                ),
                 HashSet::from([
                     ("test_sample_1.gtf".to_string(), "A".to_string()),
                     ("test_sample_2.gtf".to_string(), "A_2".to_string()),
                 ]),
             ),
             (
-                BTreeSet::from([
+                TranscriptSignature::new(
                     "chr2".to_string(),
                     "+".to_string(),
-                    "21".to_string(),
-                    "22".to_string(),
-                    "31".to_string(),
-                    "32".to_string(),
-                ]),
+                    BTreeSet::from([
+                        "21".to_string(),
+                        "22".to_string(),
+                        "31".to_string(),
+                        "32".to_string(),
+                    ]),
+                    BTreeSet::new(),
+                ),
                 HashSet::from([("test_sample_1.gtf".to_string(), "B".to_string())]),
             ),
             (
-                BTreeSet::from([
+                TranscriptSignature::new(
                     "chr3".to_string(),
                     "+".to_string(),
-                    "41".to_string(),
-                    "42".to_string(),
-                    "51".to_string(),
-                    "52".to_string(),
-                ]),
+                    BTreeSet::from([
+                        "41".to_string(),
+                        "42".to_string(),
+                        "51".to_string(),
+                        "52".to_string(),
+                    ]),
+                    BTreeSet::new(),
+                ),
                 HashSet::from([("test_sample_2.gtf".to_string(), "C".to_string())]),
             ),
         ]);
@@ -122,19 +128,19 @@ mod tests {
         let expected_unified_transcripts = HashMap::from([
             (
                 ("test_sample_1.gtf".to_string(), "A".to_string()),
-                "tuni_2".to_string(),
-            ),
-            (
-                ("test_sample_1.gtf".to_string(), "B".to_string()),
                 "tuni_0".to_string(),
             ),
             (
+                ("test_sample_1.gtf".to_string(), "B".to_string()),
+                "tuni_1".to_string(),
+            ),
+            (
                 ("test_sample_2.gtf".to_string(), "A_2".to_string()),
-                "tuni_2".to_string(),
+                "tuni_0".to_string(),
             ),
             (
                 ("test_sample_2.gtf".to_string(), "C".to_string()),
-                "tuni_1".to_string(),
+                "tuni_2".to_string(),
             ),
         ]);
 
