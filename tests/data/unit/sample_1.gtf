@@ -1,0 +1,4 @@
+chr1	test	exon	1	2	.	-	.	transcript_id "A"; gene_id "A";
+chr1	test	exon	11	12	.	-	.	transcript_id "A"; gene_id "A";
+chr2	test	exon	20	30	.	+	.	transcript_id "B"; gene_id "B";
+chr2	test	CDS	25	29	.	+	.	transcript_id "B"; gene_id "B";

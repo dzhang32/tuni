@@ -20,7 +20,7 @@ pub struct TranscriptSignature {
 }
 
 impl TranscriptSignature {
-    pub fn new(
+    pub fn from(
         chr: String,
         strand: String,
         exon_boundaries: BTreeSet<String>,
@@ -106,7 +106,7 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
             let transcript_signature =
                 gtf_transcripts
                     .entry(record.transcript_id)
-                    .or_insert(TranscriptSignature::new(
+                    .or_insert(TranscriptSignature::from(
                         record.chr,
                         record.strand,
                         BTreeSet::new(),
@@ -198,12 +198,12 @@ mod tests {
     }
 
     #[test]
-    fn test_load_gtf() {
+    fn test_read_gtf() {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
             String::from("A"),
-            TranscriptSignature::new(
+            TranscriptSignature::from(
                 "chr1".to_string(),
                 "-".to_string(),
                 BTreeSet::from([
@@ -218,21 +218,16 @@ mod tests {
 
         expected_transcripts.insert(
             String::from("B"),
-            TranscriptSignature::new(
+            TranscriptSignature::from(
                 "chr2".to_string(),
                 "+".to_string(),
-                BTreeSet::from([
-                    String::from("21"),
-                    String::from("22"),
-                    String::from("31"),
-                    String::from("32"),
-                ]),
-                BTreeSet::new(),
+                BTreeSet::from([String::from("20"), String::from("30")]),
+                BTreeSet::from([String::from("25"), String::from("29")]),
             ),
         );
 
         assert_eq!(
-            read_gtf(&PathBuf::from("tests/data/unit/test_sample_1.gtf")),
+            read_gtf(&PathBuf::from("tests/data/unit/sample_1.gtf")),
             expected_transcripts
         )
     }
@@ -240,13 +235,13 @@ mod tests {
     #[test]
     fn test_write_unified_gtf() {
         let mut transcript_unifier = TranscriptUnifier::new();
-        let gtf_path = PathBuf::from("tests/data/unit/test_sample_1.gtf");
+        let gtf_path = PathBuf::from("tests/data/unit/sample_1.gtf");
         let mut gtf_transcripts = read_gtf(&gtf_path);
-        transcript_unifier.add_transcripts("test_sample_1.gtf".to_string(), &mut gtf_transcripts);
+        transcript_unifier.add_transcripts("sample_1.gtf".to_string(), &mut gtf_transcripts);
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();
-        let output_path = temp_dir.path().join("test_sample_1.tuni.gtf");
+        let output_path = temp_dir.path().join("sample_1.tuni.gtf");
 
         write_unified_gtf(&gtf_path, temp_dir.path(), &transcript_unifier);
         // .collect() as <Vec<&str>> for easier debugging.

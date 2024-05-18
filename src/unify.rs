@@ -55,14 +55,14 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn test_add_transcripts() {
+    fn test_transcript_unifier() {
         let mut transcript_unifier = TranscriptUnifier::new();
 
         // Sample 2 is an unsorted GTF, ensuring unification works
         // regardless if input is sorted.
         let gtf_paths = [
-            PathBuf::from("tests/data/unit/test_sample_1.gtf"),
-            PathBuf::from("tests/data/unit/test_sample_2.gtf"),
+            PathBuf::from("tests/data/unit/sample_1.gtf"),
+            PathBuf::from("tests/data/unit/sample_2.gtf"),
         ];
         for gtf_path in gtf_paths {
             let mut gtf_transcripts = read_gtf(&gtf_path);
@@ -72,7 +72,7 @@ mod tests {
 
         let expected_transcripts = BTreeMap::from([
             (
-                TranscriptSignature::new(
+                TranscriptSignature::from(
                     "chr1".to_string(),
                     "-".to_string(),
                     BTreeSet::from([
@@ -84,62 +84,49 @@ mod tests {
                     BTreeSet::new(),
                 ),
                 HashSet::from([
-                    ("test_sample_1.gtf".to_string(), "A".to_string()),
-                    ("test_sample_2.gtf".to_string(), "A_2".to_string()),
+                    ("sample_1.gtf".to_string(), "A".to_string()),
+                    ("sample_2.gtf".to_string(), "A_2".to_string()),
                 ]),
             ),
             (
-                TranscriptSignature::new(
+                TranscriptSignature::from(
                     "chr2".to_string(),
                     "+".to_string(),
-                    BTreeSet::from([
-                        "21".to_string(),
-                        "22".to_string(),
-                        "31".to_string(),
-                        "32".to_string(),
-                    ]),
-                    BTreeSet::new(),
+                    BTreeSet::from(["20".to_string(), "30".to_string()]),
+                    BTreeSet::from(["25".to_string(), "29".to_string()]),
                 ),
-                HashSet::from([("test_sample_1.gtf".to_string(), "B".to_string())]),
+                HashSet::from([("sample_1.gtf".to_string(), "B".to_string())]),
             ),
             (
-                TranscriptSignature::new(
-                    "chr3".to_string(),
+                TranscriptSignature::from(
+                    "chr2".to_string(),
                     "+".to_string(),
-                    BTreeSet::from([
-                        "41".to_string(),
-                        "42".to_string(),
-                        "51".to_string(),
-                        "52".to_string(),
-                    ]),
-                    BTreeSet::new(),
+                    BTreeSet::from(["20".to_string(), "30".to_string()]),
+                    BTreeSet::from(["26".to_string(), "28".to_string()]),
                 ),
-                HashSet::from([("test_sample_2.gtf".to_string(), "C".to_string())]),
+                HashSet::from([("sample_2.gtf".to_string(), "C".to_string())]),
             ),
         ]);
 
         assert_eq!(transcript_unifier.transcripts, expected_transcripts);
 
-        // unify_transcripts() loops through transcripts in an arbitrary order,
-        // so we don't know (and cannot test) the exact unified ID that is
-        // assigned to each transcript.
         transcript_unifier.unify_transcripts();
 
         let expected_unified_transcripts = HashMap::from([
             (
-                ("test_sample_1.gtf".to_string(), "A".to_string()),
+                ("sample_1.gtf".to_string(), "A".to_string()),
                 "tuni_0".to_string(),
             ),
             (
-                ("test_sample_1.gtf".to_string(), "B".to_string()),
+                ("sample_1.gtf".to_string(), "B".to_string()),
                 "tuni_1".to_string(),
             ),
             (
-                ("test_sample_2.gtf".to_string(), "A_2".to_string()),
+                ("sample_2.gtf".to_string(), "A_2".to_string()),
                 "tuni_0".to_string(),
             ),
             (
-                ("test_sample_2.gtf".to_string(), "C".to_string()),
+                ("sample_2.gtf".to_string(), "C".to_string()),
                 "tuni_2".to_string(),
             ),
         ]);
