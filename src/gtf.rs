@@ -1,30 +1,34 @@
 use crate::unify::TranscriptUnifier;
 
 use regex::{Captures, Regex};
-use std::collections::{BTreeSet, HashMap};
-use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::Path;
+use std::{
+    collections::{BTreeSet, HashMap},
+    fs::File,
+    io::{BufRead, BufReader, BufWriter, Write},
+    path::Path,
+    rc::Rc,
+};
 
-pub type TranscriptId = String;
+const TRANSCRIPT_ID_RE: &str = r#"transcript_id "([^"]+)"#;
+pub type TranscriptId = Rc<str>;
 
 // exon_boundaries and cds_boundaries must be BTreesSets as
 // 1. we want to use TranscriptSignature as a key later on and HashSet is not hashable
 // 2. we want values to be unique.
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TranscriptSignature {
-    chr: String,
-    strand: String,
-    exon_boundaries: BTreeSet<String>,
-    cds_boundaries: BTreeSet<String>,
+    chr: Rc<str>,
+    strand: Rc<str>,
+    exon_boundaries: BTreeSet<Rc<str>>,
+    cds_boundaries: BTreeSet<Rc<str>>,
 }
 
 impl TranscriptSignature {
     pub fn from(
-        chr: String,
-        strand: String,
-        exon_boundaries: BTreeSet<String>,
-        cds_boundaries: BTreeSet<String>,
+        chr: Rc<str>,
+        strand: Rc<str>,
+        exon_boundaries: BTreeSet<Rc<str>>,
+        cds_boundaries: BTreeSet<Rc<str>>,
     ) -> TranscriptSignature {
         TranscriptSignature {
             chr,
@@ -34,7 +38,7 @@ impl TranscriptSignature {
         }
     }
 
-    fn insert_boundary(&mut self, feature: &str, value: String) {
+    fn insert_boundary(&mut self, feature: &str, value: Rc<str>) {
         match feature {
             "exon" => self.exon_boundaries.insert(value),
             "CDS" => self.cds_boundaries.insert(value),
@@ -47,33 +51,32 @@ impl TranscriptSignature {
     }
 }
 
-const TRANSCRIPT_ID_RE: &str = r#"transcript_id "([^"]+)"#;
-
 #[derive(Debug, PartialEq)]
 struct GtfRecord {
-    feature: String,
-    strand: String,
-    chr: String,
-    start: String,
-    end: String,
-    transcript_id: String,
+    feature: Rc<str>,
+    strand: Rc<str>,
+    chr: Rc<str>,
+    start: Rc<str>,
+    end: Rc<str>,
+    transcript_id: Rc<str>,
 }
 
 impl GtfRecord {
     fn from(line_split: &[&str], transcript_re: &Regex) -> GtfRecord {
         // TODO: Use something other than String?
         GtfRecord {
-            chr: line_split[0].to_owned(),
-            feature: line_split[2].to_owned(),
-            strand: line_split[6].to_owned(),
-            start: line_split[3].to_owned(),
-            end: line_split[4].to_owned(),
-            transcript_id: GtfRecord::get_transcript_id(line_split, transcript_re)
-                .unwrap()
-                .get(1)
-                .unwrap()
-                .as_str()
-                .to_owned(),
+            chr: Rc::from(line_split[0]),
+            feature: Rc::from(line_split[2]),
+            strand: Rc::from(line_split[6]),
+            start: Rc::from(line_split[3]),
+            end: Rc::from(line_split[4]),
+            transcript_id: Rc::from(
+                GtfRecord::get_transcript_id(line_split, transcript_re)
+                    .unwrap()
+                    .get(1)
+                    .unwrap()
+                    .as_str(),
+            ),
         }
     }
 
@@ -110,7 +113,6 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
             if GtfRecord::is_exon_or_cds(&line_split) {
                 let record = GtfRecord::from(&line_split, &transcript_re);
 
-                // TODO: Make TranscriptSignature a struct.
                 let transcript_signature = gtf_transcripts.entry(record.transcript_id).or_insert(
                     TranscriptSignature::from(
                         record.chr,
@@ -126,7 +128,6 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
         }
     }
 
-    // println!("{:?}", gtf_transcripts);
     gtf_transcripts
 }
 
@@ -135,7 +136,6 @@ pub fn write_unified_gtf(
     output_dir: &Path,
     transcript_unifier: &TranscriptUnifier,
 ) {
-    // TODO: switch to different String type or stick with OsString?
     let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
     let mut output_path = output_dir.to_path_buf();
     output_path.push(gtf_file_name);
@@ -151,7 +151,7 @@ pub fn write_unified_gtf(
     let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
 
     for line in reader.lines() {
-        let mut line: String = line.unwrap();
+        let mut line = line.unwrap();
 
         if !line.starts_with('#') {
             let line_split = line.split('\t').collect::<Vec<&str>>();
@@ -161,8 +161,8 @@ pub fn write_unified_gtf(
             if let Some(captures) = transcript_id {
                 // TODO: handle errors.
                 let unified_id = transcript_unifier.get_unified_id(&(
-                    gtf_file_name.to_owned(),
-                    captures.get(1).unwrap().as_str().to_owned(),
+                    Rc::from(gtf_file_name),
+                    Rc::from(captures.get(1).unwrap().as_str()),
                 ));
                 line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
             }
@@ -191,12 +191,12 @@ mod tests {
         assert_eq!(
             GtfRecord::from(&line_split, &transcript_re),
             GtfRecord {
-                feature: String::from("exon"),
-                strand: String::from("+"),
-                chr: String::from("chr1"),
-                start: String::from("1"),
-                end: String::from("2"),
-                transcript_id: String::from("A"),
+                feature: Rc::from("exon"),
+                strand: Rc::from("+"),
+                chr: Rc::from("chr1"),
+                start: Rc::from("1"),
+                end: Rc::from("2"),
+                transcript_id: Rc::from("A"),
             }
         );
     }
@@ -234,27 +234,22 @@ mod tests {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
-            String::from("A"),
+            Rc::from("A"),
             TranscriptSignature::from(
-                "chr1".to_string(),
-                "-".to_string(),
-                BTreeSet::from([
-                    String::from("1"),
-                    String::from("12"),
-                    String::from("11"),
-                    String::from("2"),
-                ]),
+                Rc::from("chr1"),
+                Rc::from("-"),
+                BTreeSet::from([Rc::from("1"), Rc::from("12"), Rc::from("11"), Rc::from("2")]),
                 BTreeSet::new(),
             ),
         );
 
         expected_transcripts.insert(
-            String::from("B"),
+            Rc::from("B"),
             TranscriptSignature::from(
-                "chr2".to_string(),
-                "+".to_string(),
-                BTreeSet::from([String::from("20"), String::from("30")]),
-                BTreeSet::from([String::from("25"), String::from("29")]),
+                Rc::from("chr2"),
+                Rc::from("+"),
+                BTreeSet::from([Rc::from("20"), Rc::from("30")]),
+                BTreeSet::from([Rc::from("25"), Rc::from("29")]),
             ),
         );
 
@@ -269,7 +264,7 @@ mod tests {
         let mut transcript_unifier = TranscriptUnifier::new();
         let gtf_path = PathBuf::from("tests/data/unit/sample_1.gtf");
         let mut gtf_transcripts = read_gtf(&gtf_path);
-        transcript_unifier.add_transcripts("sample_1.gtf".to_string(), &mut gtf_transcripts);
+        transcript_unifier.add_transcripts(Rc::from("sample_1.gtf"), &mut gtf_transcripts);
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();

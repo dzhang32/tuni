@@ -6,10 +6,13 @@ use gtf::{read_gtf, write_unified_gtf};
 use unify::TranscriptUnifier;
 
 use clap::Parser;
-use std::error::Error;
-use std::fs;
-use std::fs::File;
-use std::path::PathBuf;
+use std::{
+    error::Error,
+    fs,
+    fs::File,
+    path::PathBuf,
+    rc::Rc,
+};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -75,7 +78,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     for gtf_path in &gtf_paths {
         let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
         let mut gtf_transcripts = read_gtf(gtf_path);
-        transcript_unifier.add_transcripts(gtf_file_name.to_owned(), &mut gtf_transcripts);
+        transcript_unifier.add_transcripts(Rc::from(gtf_file_name), &mut gtf_transcripts);
     }
 
     transcript_unifier.unify_transcripts();
