@@ -1,1 +1,2 @@
-tests/data/benches/test_chess.gtf
+tests/data/benches/chess3.0.1.primary.gtf
+tests/data/benches/Homo_sapiens.GRCh38.111.chr.gtf
