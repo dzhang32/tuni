@@ -11,5 +11,10 @@ regex = "1.5"
 
 [dev-dependencies]
 assert_cmd = "2.0.14"
+criterion = "0.5.1"
 rstest = "0.19.0"
 tempfile = "3.10.1"
+
+[[bench]]
+name = "benchmark"
+harness = false
