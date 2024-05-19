@@ -2,6 +2,9 @@
 mod gtf;
 mod unify;
 
+use gtf::{read_gtf, write_unified_gtf};
+use unify::TranscriptUnifier;
+
 use clap::Parser;
 use std::error::Error;
 use std::fs;
@@ -16,10 +19,9 @@ pub struct Cli {
         short, 
         long, 
         value_name = "*.txt", 
-        required = true, 
-        value_parser = Cli::parse_gtf_paths
+        required = true,
     )]
-    gtf_paths: Vec<PathBuf>,
+    gtf_paths: PathBuf,
 
     /// Directory to store the outputted GTFs with unified transcripts.
     #[arg(
@@ -27,18 +29,18 @@ pub struct Cli {
         long, 
         value_name = "/output/dir/", 
         required = true, 
-        value_parser = Cli::parse_output_path
+        value_parser = Cli::parse_output_dir
     )]
-    output_path: PathBuf,
+    output_dir: PathBuf,
 }
 
 impl Cli {
     /// Parse file containing GTFs, checking that GTFs exist and are readable.
-    fn parse_gtf_paths(s: &str) -> Result<Vec<PathBuf>, String> {
-        let gtf_paths_file = PathBuf::from(s);
-        let gtf_paths = match fs::read_to_string(gtf_paths_file) {
+    /// https://github.com/clap-rs/clap/issues/4808
+    fn parse_gtf_paths(gtf_paths: PathBuf) -> Result<Vec<PathBuf>, String> {
+        let gtf_paths = match fs::read_to_string(&gtf_paths) {
             Ok(file) => file.lines().map(PathBuf::from).collect::<Vec<PathBuf>>(),
-            Err(e) => return Err(format!("{s}: {e}")),
+            Err(e) => return Err(format!("{}: {}", gtf_paths.display(), e)),
         };
 
         // Make sure all GTFs exist and are readable.
@@ -53,20 +55,35 @@ impl Cli {
     }
 
     /// Parse output path, checking that it points to an existing directory.
-    fn parse_output_path(s: &str) -> Result<PathBuf, String> {
-        let output_path = PathBuf::from(s);
-        if !output_path.is_dir() {
+    fn parse_output_dir(s: &str) -> Result<PathBuf, String> {
+        let output_dir = PathBuf::from(s);
+        if !output_dir.is_dir() {
             return Err(format!(
-                "output_path must point to an existing directory: {}",
-                output_path.display()
+                "output_dir must point to an existing directory: {}",
+                output_dir.display()
             ));
         };
-        Ok(output_path)
+        Ok(output_dir)
     }
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
-    let cli = Cli::parse();
+    let mut transcript_unifier = TranscriptUnifier::new();
+    // https://github.com/clap-rs/clap/issues/4808.
+    let gtf_paths = Cli::parse_gtf_paths(cli.gtf_paths)?;
+
+    for gtf_path in &gtf_paths {
+        let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
+        let mut gtf_transcripts = read_gtf(gtf_path);
+        transcript_unifier.add_transcripts(gtf_file_name.to_owned(), &mut gtf_transcripts);
+    }
+
+    transcript_unifier.unify_transcripts();
+
+    for gtf_path in &gtf_paths {
+        write_unified_gtf(gtf_path, &cli.output_dir, &transcript_unifier)
+    }
+
     Ok(())
 }
 
@@ -78,27 +95,27 @@ mod tests {
     /// exist or 2. are not readable.
     #[test]
     fn test_parse_gtf_paths() {
-        let result = Cli::parse_gtf_paths("does_not_exist.txt");
+        let result = Cli::parse_gtf_paths(PathBuf::from("does_not_exist.txt"));
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
-        let result = Cli::parse_gtf_paths("tests/data/gtf_paths_missing_gtf.txt");
+        let result = Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths_missing_gtf.txt"));
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
-        let result = Cli::parse_gtf_paths("tests/data/gtf_paths.txt");
+        let result = Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths.txt"));
         assert!(result.is_ok(), "{:?}", result);
     }
 
     /// Test that cli will error if output path is not an existing directory.
     #[test]
-    fn test_parse_output_path() {
-        let result = Cli::parse_output_path("/does/not/exist/");
+    fn test_parse_output_dir() {
+        let result = Cli::parse_output_dir("/does/not/exist/");
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
         // Not a directory.
-        let result = Cli::parse_output_path("tests/data/gtf_paths_missing_gtf.txt");
+        let result = Cli::parse_output_dir("tests/data/unit/gtf_paths_missing_gtf.txt");
         assert!(result.is_err(), "Expected an error, found: {:?}", result);
 
-        let result = Cli::parse_output_path("tests/data/");
+        let result = Cli::parse_output_dir("tests/data/unit/");
         assert!(result.is_ok(), "{:?}", result);
     }
 }
