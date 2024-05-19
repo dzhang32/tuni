@@ -96,6 +96,7 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
 
     // Avoid reading the entire file into memory at once.
     let reader = BufReader::new(gtf);
+    // TODO: make this a static const.
     let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
     // TODO: better name?
     let mut gtf_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
@@ -199,10 +200,28 @@ mod tests {
     #[case(r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#, true)]
     #[case(r#"chr1	RefSeq	CDS	1	2	.	+	.	transcript_id "A";"#, true)]
     #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A"#, false)]
-    fn test_gtfrecord_is_exon(#[case] line: &str, #[case] expected: bool) {
+    fn test_is_exon_or_cds(#[case] line: &str, #[case] expected: bool) {
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
         assert_eq!(GtfRecord::is_exon_or_cds(&line_split), expected);
+    }
+
+    #[rstest]
+    #[case(r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#, Some(""))]
+    #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A"#, Some(""))]
+    #[case(r#"chr1	RefSeq	gene	1	2	.	+	.	gene_id "A"#, None)]
+    fn test_get_transcript_id(#[case] line: &str, #[case] expected: Option<&str>) {
+        let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
+        let line_split = line.split('\t').collect::<Vec<&str>>();
+
+        match expected {
+            Some(_) => {
+                let capture = GtfRecord::get_transcript_id(&line_split, &transcript_re);
+                assert!(capture.is_some());
+                assert_eq!(capture.unwrap().get(1).unwrap().as_str(), "A");
+            }
+            None => assert!(GtfRecord::get_transcript_id(&line_split, &transcript_re).is_none()),
+        }
     }
 
     #[test]
