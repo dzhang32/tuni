@@ -1,6 +1,6 @@
 use crate::unify::TranscriptUnifier;
 
-use regex::{Match, Regex};
+use regex::{Captures, Regex};
 use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
@@ -70,6 +70,8 @@ impl GtfRecord {
             end: line_split[4].to_owned(),
             transcript_id: GtfRecord::get_transcript_id(line_split, transcript_re)
                 .unwrap()
+                .get(1)
+                .unwrap()
                 .as_str()
                 .to_owned(),
         }
@@ -79,9 +81,12 @@ impl GtfRecord {
         line_split[2] == "exon" || line_split[2] == "CDS"
     }
 
-    fn get_transcript_id<'a>(line_split: &[&'a str], transcript_re: &Regex) -> Option<Match<'a>> {
+    fn get_transcript_id<'a>(
+        line_split: &[&'a str],
+        transcript_re: &Regex,
+    ) -> Option<Captures<'a>> {
         // TODO: Handle errors.
-        transcript_re.captures(line_split[8]).unwrap().get(1)
+        transcript_re.captures(line_split[8])
     }
 }
 
@@ -148,9 +153,12 @@ pub fn write_unified_gtf(
 
         let transcript_id = GtfRecord::get_transcript_id(&line_split, &transcript_re);
 
-        if let Some(m) = transcript_id {
-            let unified_id = transcript_unifier
-                .get_unified_id(&(gtf_file_name.to_owned(), m.as_str().to_owned()));
+        if let Some(captures) = transcript_id {
+            // TODO: handle errors.
+            let unified_id = transcript_unifier.get_unified_id(&(
+                gtf_file_name.to_owned(),
+                captures.get(1).unwrap().as_str().to_owned(),
+            ));
             line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
         }
 
