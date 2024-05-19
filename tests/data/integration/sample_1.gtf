@@ -1,3 +1,4 @@
+#!test-comment
 chr1	test	transcript	1	100	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";
 chr1	test	exon	1	50	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";
 chr1	test	exon	70	90	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";

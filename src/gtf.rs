@@ -103,24 +103,26 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
 
     for line in reader.lines() {
         let line = line.unwrap();
-        let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        if GtfRecord::is_exon_or_cds(&line_split) {
-            let record = GtfRecord::from(&line_split, &transcript_re);
+        if !line.starts_with('#') {
+            let line_split = line.split('\t').collect::<Vec<&str>>();
 
-            // TODO: Make TranscriptSignature a struct.
-            let transcript_signature =
-                gtf_transcripts
-                    .entry(record.transcript_id)
-                    .or_insert(TranscriptSignature::from(
+            if GtfRecord::is_exon_or_cds(&line_split) {
+                let record = GtfRecord::from(&line_split, &transcript_re);
+
+                // TODO: Make TranscriptSignature a struct.
+                let transcript_signature = gtf_transcripts.entry(record.transcript_id).or_insert(
+                    TranscriptSignature::from(
                         record.chr,
                         record.strand,
                         BTreeSet::new(),
                         BTreeSet::new(),
-                    ));
+                    ),
+                );
 
-            transcript_signature.insert_boundary(&record.feature, record.start);
-            transcript_signature.insert_boundary(&record.feature, record.end);
+                transcript_signature.insert_boundary(&record.feature, record.start);
+                transcript_signature.insert_boundary(&record.feature, record.end);
+            }
         }
     }
 
@@ -150,17 +152,20 @@ pub fn write_unified_gtf(
 
     for line in reader.lines() {
         let mut line: String = line.unwrap();
-        let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        let transcript_id = GtfRecord::get_transcript_id(&line_split, &transcript_re);
+        if !line.starts_with('#') {
+            let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        if let Some(captures) = transcript_id {
-            // TODO: handle errors.
-            let unified_id = transcript_unifier.get_unified_id(&(
-                gtf_file_name.to_owned(),
-                captures.get(1).unwrap().as_str().to_owned(),
-            ));
-            line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
+            let transcript_id = GtfRecord::get_transcript_id(&line_split, &transcript_re);
+
+            if let Some(captures) = transcript_id {
+                // TODO: handle errors.
+                let unified_id = transcript_unifier.get_unified_id(&(
+                    gtf_file_name.to_owned(),
+                    captures.get(1).unwrap().as_str().to_owned(),
+                ));
+                line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
+            }
         }
 
         // TODO: Handle errors or check CLI when parsing.
