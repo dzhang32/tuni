@@ -1,0 +1,15 @@
+chr1	test	transcript	1	100	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";
+chr1	test	exon	70	90	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";
+chr1	test	exon	90	100	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples";
+chr2	test	transcript	201	300	.	+	.	transcript_id "B"; test_case "Different strand";
+chr2	test	exon	201	300	.	+	.	transcript_id "B"; test_case "Different strand";
+chr3	test	gene	1	100	.	+	.	gene_id "C"; test_case "Gene records are unchanged";
+chr3	test	transcript	1	110	.	+	.	transcript_id "C"; test_case "Different UTR, same CDS";
+chr3	test	exon	1	50	.	+	.	transcript_id "C"; test_case "Different UTR, same CDS";
+chr3	test	exon	70	110	.	+	.	transcript_id "C"; test_case "Different UTR, same CDS";
+chr3	test	CDS	40	50	.	+	0	transcript_id "C"; test_case "Different UTR, same CDS";
+chr3	test	CDS	90	100	.	+	0	transcript_id "C"; test_case "Different UTR, same CDS";
+chr4	test	transcript	100	200	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
+chr4	test	exon	100	200	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
+chr4	test	CDS	120	180	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
+chr1	test	exon	1	50	.	+	.	transcript_id "A"; test_case "Same transcript, 2 samples (unordered exon)";

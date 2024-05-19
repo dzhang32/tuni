@@ -277,7 +277,7 @@ mod tests {
                 .unwrap()
                 .lines()
                 .collect::<Vec<&str>>(),
-            read_to_string(PathBuf::from("tests/data/unit/expected_unified_gtf.gtf"))
+            read_to_string(PathBuf::from("tests/data/unit/expected_sample_1.tuni.gtf"))
                 .unwrap()
                 .lines()
                 .collect::<Vec<&str>>()
