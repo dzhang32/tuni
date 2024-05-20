@@ -1,6 +1,6 @@
 use crate::unify::TranscriptUnifier;
 
-use regex::{Captures, Regex};
+use regex::{Match, Regex};
 use std::{
     collections::{BTreeSet, HashMap},
     fs::File,
@@ -73,8 +73,6 @@ impl GtfRecord {
             transcript_id: Rc::from(
                 GtfRecord::get_transcript_id(line_split, transcript_re)
                     .unwrap()
-                    .get(1)
-                    .unwrap()
                     .as_str(),
             ),
         }
@@ -84,12 +82,9 @@ impl GtfRecord {
         line_split[2] == "exon" || line_split[2] == "CDS"
     }
 
-    fn get_transcript_id<'a>(
-        line_split: &[&'a str],
-        transcript_re: &Regex,
-    ) -> Option<Captures<'a>> {
+    fn get_transcript_id<'a>(line_split: &[&'a str], transcript_re: &Regex) -> Option<Match<'a>> {
         // TODO: Handle errors.
-        transcript_re.captures(line_split[8])
+        transcript_re.find(line_split[8])
     }
 }
 
@@ -160,10 +155,8 @@ pub fn write_unified_gtf(
 
             if let Some(captures) = transcript_id {
                 // TODO: handle errors.
-                let unified_id = transcript_unifier.get_unified_id(&(
-                    Rc::from(gtf_file_name),
-                    Rc::from(captures.get(1).unwrap().as_str()),
-                ));
+                let unified_id = transcript_unifier
+                    .get_unified_id(&(Rc::from(gtf_file_name), Rc::from(captures.as_str())));
                 line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
             }
         }
@@ -196,7 +189,7 @@ mod tests {
                 chr: Rc::from("chr1"),
                 start: Rc::from("1"),
                 end: Rc::from("2"),
-                transcript_id: Rc::from("A"),
+                transcript_id: Rc::from("transcript_id \"A"),
             }
         );
     }
@@ -223,7 +216,7 @@ mod tests {
             Some(_) => {
                 let capture = GtfRecord::get_transcript_id(&line_split, &transcript_re);
                 assert!(capture.is_some());
-                assert_eq!(capture.unwrap().get(1).unwrap().as_str(), "A");
+                assert_eq!(capture.unwrap().as_str(), "transcript_id \"A");
             }
             None => assert!(GtfRecord::get_transcript_id(&line_split, &transcript_re).is_none()),
         }
@@ -234,7 +227,7 @@ mod tests {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
-            Rc::from("A"),
+            Rc::from("transcript_id \"A"),
             TranscriptSignature::from(
                 Rc::from("chr1"),
                 Rc::from("-"),
@@ -244,7 +237,7 @@ mod tests {
         );
 
         expected_transcripts.insert(
-            Rc::from("B"),
+            Rc::from("transcript_id \"B"),
             TranscriptSignature::from(
                 Rc::from("chr2"),
                 Rc::from("+"),
