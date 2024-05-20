@@ -148,7 +148,7 @@ pub fn write_unified_gtf(
             if let Some(transcript_id) = transcript_id {
                 // TODO: handle errors.
                 let unified_id = transcript_unifier
-                    .get_unified_id(&(Rc::clone(&gtf_file_name), Rc::from(transcript_id)));
+                    .get_unified_id(&[Rc::clone(&gtf_file_name), Rc::from(transcript_id)]);
                 line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
             }
         }

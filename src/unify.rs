@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-pub type SampleTranscriptId = (Rc<str>, Rc<str>);
+pub type SampleTranscriptId = [Rc<str>; 2];
 pub type UnifiedId = Rc<str>;
 
 const UNIFIED_ID_PREFIX: &str = "tuni_";
@@ -30,7 +30,7 @@ impl TranscriptUnifier {
         // TODO: should I drain()?
         for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
             let sample_transcript_id = self.transcripts.entry(transcript_signature).or_default();
-            sample_transcript_id.insert((Rc::clone(&gtf_file_name), Rc::clone(&transcript_id)));
+            sample_transcript_id.insert([Rc::clone(&gtf_file_name), Rc::clone(&transcript_id)]);
         }
     }
 
@@ -84,8 +84,8 @@ mod tests {
                     BTreeSet::new(),
                 ),
                 HashSet::from([
-                    (Rc::from("sample_1.gtf"), Rc::from("transcript_id \"A\"")),
-                    (Rc::from("sample_2.gtf"), Rc::from("transcript_id \"A_2\"")),
+                    [Rc::from("sample_1.gtf"), Rc::from("transcript_id \"A\"")],
+                    [Rc::from("sample_2.gtf"), Rc::from("transcript_id \"A_2\"")],
                 ]),
             ),
             (
@@ -95,7 +95,7 @@ mod tests {
                     BTreeSet::from([Rc::from("20"), Rc::from("30")]),
                     BTreeSet::from([Rc::from("25"), Rc::from("29")]),
                 ),
-                HashSet::from([(Rc::from("sample_1.gtf"), Rc::from("transcript_id \"B\""))]),
+                HashSet::from([[Rc::from("sample_1.gtf"), Rc::from("transcript_id \"B\"")]]),
             ),
             (
                 TranscriptSignature::from(
@@ -104,7 +104,7 @@ mod tests {
                     BTreeSet::from([Rc::from("20"), Rc::from("30")]),
                     BTreeSet::from([Rc::from("26"), Rc::from("28")]),
                 ),
-                HashSet::from([(Rc::from("sample_2.gtf"), Rc::from("transcript_id \"C\""))]),
+                HashSet::from([[Rc::from("sample_2.gtf"), Rc::from("transcript_id \"C\"")]]),
             ),
         ]);
 
@@ -114,19 +114,19 @@ mod tests {
 
         let expected_unified_transcripts = HashMap::from([
             (
-                (Rc::from("sample_1.gtf"), Rc::from("transcript_id \"A\"")),
+                [Rc::from("sample_1.gtf"), Rc::from("transcript_id \"A\"")],
                 Rc::from("tuni_0"),
             ),
             (
-                (Rc::from("sample_1.gtf"), Rc::from("transcript_id \"B\"")),
+                [Rc::from("sample_1.gtf"), Rc::from("transcript_id \"B\"")],
                 Rc::from("tuni_1"),
             ),
             (
-                (Rc::from("sample_2.gtf"), Rc::from("transcript_id \"A_2\"")),
+                [Rc::from("sample_2.gtf"), Rc::from("transcript_id \"A_2\"")],
                 Rc::from("tuni_0"),
             ),
             (
-                (Rc::from("sample_2.gtf"), Rc::from("transcript_id \"C\"")),
+                [Rc::from("sample_2.gtf"), Rc::from("transcript_id \"C\"")],
                 Rc::from("tuni_2"),
             ),
         ]);
