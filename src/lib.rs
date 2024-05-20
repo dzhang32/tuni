@@ -1,5 +1,6 @@
 // TODO: should I switch these to use?
 pub mod cli;
+mod error;
 mod gtf;
 mod unify;
 
