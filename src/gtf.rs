@@ -129,6 +129,7 @@ pub fn write_unified_gtf(
     let mut output_path = output_dir.to_path_buf();
     output_path.push(gtf_file_name);
     output_path.set_extension("tuni.gtf");
+    let gtf_file_name: Rc<str> = Rc::from(gtf_file_name);
 
     // TODO: Handle errors or check CLI when parsing.
     let output_unified_gtf = File::create(output_path).expect("Unable to create file");
@@ -142,13 +143,12 @@ pub fn write_unified_gtf(
 
         if !line.starts_with('#') {
             let line_split = line.split('\t').collect::<Vec<&str>>();
-
             let transcript_id = GtfRecord::get_transcript_id(&line_split);
 
             if let Some(transcript_id) = transcript_id {
                 // TODO: handle errors.
                 let unified_id = transcript_unifier
-                    .get_unified_id(&(Rc::from(gtf_file_name), Rc::from(transcript_id)));
+                    .get_unified_id(&(Rc::clone(&gtf_file_name), Rc::from(transcript_id)));
                 line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
             }
         }
