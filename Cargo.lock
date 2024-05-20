@@ -802,7 +802,6 @@ dependencies = [
  "assert_cmd",
  "clap",
  "criterion",
- "regex",
  "rstest",
  "tempfile",
 ]

@@ -1,6 +1,5 @@
 use crate::unify::TranscriptUnifier;
 
-use regex::{Match, Regex};
 use std::{
     collections::{BTreeSet, HashMap},
     fs::File,
@@ -9,7 +8,6 @@ use std::{
     rc::Rc,
 };
 
-const TRANSCRIPT_ID_RE: &str = r#"transcript_id "([^"]+)"#;
 pub type TranscriptId = Rc<str>;
 
 // exon_boundaries and cds_boundaries must be BTreesSets as
@@ -62,7 +60,7 @@ struct GtfRecord {
 }
 
 impl GtfRecord {
-    fn from(line_split: &[&str], transcript_re: &Regex) -> GtfRecord {
+    fn from(line_split: &[&str]) -> GtfRecord {
         // TODO: Use something other than String?
         GtfRecord {
             chr: Rc::from(line_split[0]),
@@ -70,11 +68,7 @@ impl GtfRecord {
             strand: Rc::from(line_split[6]),
             start: Rc::from(line_split[3]),
             end: Rc::from(line_split[4]),
-            transcript_id: Rc::from(
-                GtfRecord::get_transcript_id(line_split, transcript_re)
-                    .unwrap()
-                    .as_str(),
-            ),
+            transcript_id: Rc::from(GtfRecord::get_transcript_id(line_split).unwrap()),
         }
     }
 
@@ -82,9 +76,11 @@ impl GtfRecord {
         line_split[2] == "exon" || line_split[2] == "CDS"
     }
 
-    fn get_transcript_id<'a>(line_split: &[&'a str], transcript_re: &Regex) -> Option<Match<'a>> {
+    fn get_transcript_id<'a>(line_split: &[&'a str]) -> Option<&'a str> {
         // TODO: Handle errors.
-        transcript_re.find(line_split[8])
+        line_split[8]
+            .split(';')
+            .find(|x| x.trim().starts_with("transcript_id"))
     }
 }
 
@@ -94,8 +90,6 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
 
     // Avoid reading the entire file into memory at once.
     let reader = BufReader::new(gtf);
-    // TODO: make this a static const.
-    let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
     // TODO: better name?
     let mut gtf_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
@@ -106,7 +100,7 @@ pub fn read_gtf(gtf_path: &Path) -> HashMap<TranscriptId, TranscriptSignature> {
             let line_split = line.split('\t').collect::<Vec<&str>>();
 
             if GtfRecord::is_exon_or_cds(&line_split) {
-                let record = GtfRecord::from(&line_split, &transcript_re);
+                let record = GtfRecord::from(&line_split);
 
                 let transcript_signature = gtf_transcripts.entry(record.transcript_id).or_insert(
                     TranscriptSignature::from(
@@ -143,20 +137,18 @@ pub fn write_unified_gtf(
     let gtf = File::open(gtf_path).unwrap();
     let reader = BufReader::new(gtf);
 
-    let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
-
     for line in reader.lines() {
         let mut line = line.unwrap();
 
         if !line.starts_with('#') {
             let line_split = line.split('\t').collect::<Vec<&str>>();
 
-            let transcript_id = GtfRecord::get_transcript_id(&line_split, &transcript_re);
+            let transcript_id = GtfRecord::get_transcript_id(&line_split);
 
-            if let Some(captures) = transcript_id {
+            if let Some(transcript_id) = transcript_id {
                 // TODO: handle errors.
                 let unified_id = transcript_unifier
-                    .get_unified_id(&(Rc::from(gtf_file_name), Rc::from(captures.as_str())));
+                    .get_unified_id(&(Rc::from(gtf_file_name), Rc::from(transcript_id)));
                 line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
             }
         }
@@ -179,17 +171,16 @@ mod tests {
     fn test_gtfrecord_from() {
         let line = r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#;
         let line_split = line.split('\t').collect::<Vec<&str>>();
-        let transcript_re = Regex::new(r#"transcript_id "([^"]+)"#).unwrap();
 
         assert_eq!(
-            GtfRecord::from(&line_split, &transcript_re),
+            GtfRecord::from(&line_split),
             GtfRecord {
                 feature: Rc::from("exon"),
                 strand: Rc::from("+"),
                 chr: Rc::from("chr1"),
                 start: Rc::from("1"),
                 end: Rc::from("2"),
-                transcript_id: Rc::from("transcript_id \"A"),
+                transcript_id: Rc::from("transcript_id \"A\""),
             }
         );
     }
@@ -206,19 +197,18 @@ mod tests {
 
     #[rstest]
     #[case(r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#, Some(""))]
-    #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A"#, Some(""))]
-    #[case(r#"chr1	RefSeq	gene	1	2	.	+	.	gene_id "A"#, None)]
+    #[case(r#"chr1	RefSeq	transcript	1	2	.	+	.	transcript_id "A";"#, Some(""))]
+    #[case(r#"chr1	RefSeq	gene	1	2	.	+	.	gene_id "A";"#, None)]
     fn test_get_transcript_id(#[case] line: &str, #[case] expected: Option<&str>) {
-        let transcript_re = Regex::new(TRANSCRIPT_ID_RE).unwrap();
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
         match expected {
             Some(_) => {
-                let capture = GtfRecord::get_transcript_id(&line_split, &transcript_re);
+                let capture = GtfRecord::get_transcript_id(&line_split);
                 assert!(capture.is_some());
-                assert_eq!(capture.unwrap().as_str(), "transcript_id \"A");
+                assert_eq!(capture.unwrap(), "transcript_id \"A\"");
             }
-            None => assert!(GtfRecord::get_transcript_id(&line_split, &transcript_re).is_none()),
+            None => assert!(GtfRecord::get_transcript_id(&line_split).is_none()),
         }
     }
 
@@ -227,7 +217,7 @@ mod tests {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
-            Rc::from("transcript_id \"A"),
+            Rc::from("transcript_id \"A\""),
             TranscriptSignature::from(
                 Rc::from("chr1"),
                 Rc::from("-"),
@@ -237,7 +227,7 @@ mod tests {
         );
 
         expected_transcripts.insert(
-            Rc::from("transcript_id \"B"),
+            Rc::from("transcript_id \"B\""),
             TranscriptSignature::from(
                 Rc::from("chr2"),
                 Rc::from("+"),
