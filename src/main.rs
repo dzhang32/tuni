@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::process;
 
-use tuni::Cli;
+use tuni::cli::Cli;
 
 fn main() {
     let cli = Cli::parse();
