@@ -55,7 +55,7 @@ impl TranscriptUnifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gtf::read_gtf;
+    use crate::gtf;
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
@@ -70,9 +70,9 @@ mod tests {
             PathBuf::from("tests/data/unit/sample_2.gtf"),
         ];
         for gtf_path in gtf_paths {
-            let mut gtf_transcripts = read_gtf(&gtf_path);
-            let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
-            transcript_unifier.add_transcripts(Rc::from(gtf_file_name), &mut gtf_transcripts);
+            let mut gtf_transcripts = gtf::read_gtf(&gtf_path).unwrap();
+            let gtf_file_name = gtf::extract_file_name(&gtf_path);
+            transcript_unifier.add_transcripts(gtf_file_name, &mut gtf_transcripts);
         }
 
         let expected_transcripts = BTreeMap::from([

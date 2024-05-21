@@ -1,14 +1,12 @@
-// TODO: should I switch these to use?
 pub mod cli;
 mod error;
 mod gtf;
 mod unify;
 
 use cli::Cli;
-use gtf::{read_gtf, write_unified_gtf};
 use unify::TranscriptUnifier;
 
-use std::{error::Error, rc::Rc};
+use std::error::Error;
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
@@ -16,15 +14,16 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let gtf_paths = Cli::parse_gtf_paths(cli.gtf_paths)?;
 
     for gtf_path in &gtf_paths {
-        let gtf_file_name = gtf_path.file_name().unwrap().to_str().unwrap();
-        let mut gtf_transcripts = read_gtf(gtf_path);
-        transcript_unifier.add_transcripts(Rc::from(gtf_file_name), &mut gtf_transcripts);
+        // TODO: create helper function.
+        let gtf_file_name = gtf::extract_file_name(gtf_path);
+        let mut gtf_transcripts = gtf::read_gtf(gtf_path)?;
+        transcript_unifier.add_transcripts(gtf_file_name, &mut gtf_transcripts);
     }
 
     transcript_unifier.unify_transcripts();
 
     for gtf_path in &gtf_paths {
-        write_unified_gtf(gtf_path, &cli.output_dir, &transcript_unifier)
+        gtf::write_unified_gtf(gtf_path, &cli.output_dir, &transcript_unifier)?
     }
 
     Ok(())

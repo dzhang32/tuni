@@ -9,7 +9,7 @@ fn main() {
     match tuni::run(cli) {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("{e}");
+            eprintln!("{}", e);
             process::exit(1);
         }
     }

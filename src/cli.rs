@@ -35,8 +35,11 @@ impl Cli {
             .map(PathBuf::from)
             .collect::<Vec<PathBuf>>();
 
-        // Make sure all GTFs exist and are readable.
+        // Make sure all GTFs are files exist, end with ".gtf" and are readable.
         for gtf_path in &gtf_paths {
+            if !gtf_path.is_file() || !gtf_path.extension().is_some_and(|x| x == "gtf") {
+                return Err(CliError::GtfParseError(gtf_path.clone()))
+            }
             File::open(gtf_path).map_err(|_| CliError::FileReadError(gtf_path.clone()))?;
         }
 
@@ -67,7 +70,7 @@ mod tests {
 
         let result =
             Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths_missing_gtf.txt"));
-        assert!(result.is_err_and(|e| e.to_string().contains("Unable to read file")));
+        assert!(result.is_err_and(|e| e.to_string().contains("GTFs must be a file with the '.gtf' extension")));
 
         let result = Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths.txt"));
         assert!(result.is_ok());
