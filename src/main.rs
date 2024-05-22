@@ -4,7 +4,7 @@ mod gtf;
 mod unify;
 
 use clap::Parser;
-use log::info;
+use log::{info, LevelFilter};
 use std::error::Error;
 use std::process;
 
@@ -13,6 +13,12 @@ use unify::TranscriptUnifier;
 
 fn main() {
     let cli = Cli::parse();
+
+    let log_level = match cli.verbose {
+        true => LevelFilter::Info,
+        false => LevelFilter::Warn,
+    };
+    env_logger::Builder::new().filter_level(log_level).init();
 
     match run(cli) {
         Ok(_) => (),
@@ -24,8 +30,6 @@ fn main() {
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
-    env_logger::init();
-
     let mut transcript_unifier = TranscriptUnifier::new();
     // https://github.com/clap-rs/clap/issues/4808.
     let gtf_paths = Cli::parse_gtf_paths(cli.gtf_paths)?;

@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use std::{fs, fs::File, path::PathBuf};
 use crate::error::CliError;
 
@@ -23,6 +23,13 @@ pub struct Cli {
         value_parser = Cli::parse_output_dir
     )]
     pub output_dir: PathBuf,
+
+    #[arg(
+        short, 
+        long,
+        action = ArgAction::SetTrue,
+    )]
+    pub verbose: bool,
 }
 
 impl Cli {
@@ -54,6 +61,8 @@ impl Cli {
         };
         Ok(output_dir)
     }
+
+
 }
 
 
