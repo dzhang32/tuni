@@ -1,6 +1,6 @@
 use crate::error::GtfError;
 use crate::unify::TranscriptUnifier;
-use log::warn;
+use log::{info, warn};
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -90,6 +90,8 @@ impl GtfRecord {
 }
 
 pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSignature>, GtfError> {
+    info!("{}", gtf_path.display());
+
     // GTFs are checked to exist/be readable during cli argument parsing.
     let gtf = File::open(gtf_path).unwrap();
 
@@ -135,6 +137,8 @@ pub fn write_unified_gtf(
     let mut output_path = output_dir.to_path_buf();
     output_path.push(gtf_file_name.to_string());
     output_path.set_extension("tuni.gtf");
+
+    info!("{}", gtf_path.display());
 
     let output_unified_gtf =
         File::create(&output_path).map_err(|_| GtfError::FileCreateError(output_path.clone()))?;

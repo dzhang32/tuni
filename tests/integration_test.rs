@@ -8,6 +8,7 @@ fn test_tuni() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let temp_dir = tempdir().unwrap();
 
+    // RUST_LOG=INFO env var is used to ensure env_logger stores logs to the stderr.
     cmd.env("RUST_LOG", "INFO")
         .arg("--gtf-paths")
         .arg("tests/data/integration/gtf_paths.txt")
