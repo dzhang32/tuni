@@ -1,5 +1,6 @@
 use crate::error::GtfError;
 use crate::unify::TranscriptUnifier;
+use log::warn;
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -153,7 +154,10 @@ pub fn write_unified_gtf(
             if let Some(transcript_id) = transcript_id {
                 let unified_id = transcript_unifier
                     .get_unified_id(&[Rc::clone(&gtf_file_name), Rc::from(transcript_id)]);
-                line.push_str(&format!(r#" tuni_id "{}";"#, unified_id));
+                match unified_id {
+                    Some(unified_id) => line.push_str(&format!(r#" tuni_id "{}";"#, unified_id)),
+                    None => warn!("Unrecognised transcript ID found {}", transcript_id),
+                }
             }
         }
 

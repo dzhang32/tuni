@@ -14,3 +14,4 @@ chr3	test	CDS	90	100	.	+	0	transcript_id "C"; test_case "Different UTR, same CDS
 chr4	test	transcript	100	200	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
 chr4	test	exon	100	200	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
 chr4	test	CDS	110	190	.	+	.	transcript_id "E"; test_case "Same UTR, different CDS";
+chr5	test	transcript	1	100	.	+	.	transcript_id "F"; test_case "Warn about transcripts with no exons/CDS";

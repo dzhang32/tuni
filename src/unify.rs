@@ -27,7 +27,6 @@ impl TranscriptUnifier {
         gtf_file_name: Rc<str>,
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
-        // TODO: should I drain()?
         for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
             let sample_transcript_id = self.transcripts.entry(transcript_signature).or_default();
             sample_transcript_id.insert([Rc::clone(&gtf_file_name), Rc::clone(&transcript_id)]);
@@ -35,7 +34,6 @@ impl TranscriptUnifier {
     }
 
     pub fn unify_transcripts(&mut self) {
-        // TODO: Check if .drain should be used.
         for (i, sample_transcript_ids) in self.transcripts.values_mut().enumerate() {
             for sample_transcript_id in sample_transcript_ids.drain() {
                 self.unified_transcripts.insert(
@@ -46,9 +44,9 @@ impl TranscriptUnifier {
         }
     }
 
-    pub fn get_unified_id(&self, sample_transcript_id: &SampleTranscriptId) -> &str {
+    pub fn get_unified_id(&self, sample_transcript_id: &SampleTranscriptId) -> Option<&Rc<str>> {
         // TODO: Handle errors better.
-        self.unified_transcripts.get(sample_transcript_id).unwrap()
+        self.unified_transcripts.get(sample_transcript_id)
     }
 }
 

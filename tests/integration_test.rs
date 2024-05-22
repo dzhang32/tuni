@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use predicates::prelude::predicate;
 use std::fs::read_to_string;
 use tempfile::tempdir;
 
@@ -7,12 +8,16 @@ fn test_tuni() {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let temp_dir = tempdir().unwrap();
 
-    cmd.arg("--gtf-paths")
+    cmd.env("RUST_LOG", "INFO")
+        .arg("--gtf-paths")
         .arg("tests/data/integration/gtf_paths.txt")
         .arg("--output-dir")
         .arg(temp_dir.path());
 
-    cmd.assert().success();
+    let check_warning_message =
+        predicate::str::contains("Unrecognised transcript ID found transcript_id \"F\"");
+
+    cmd.assert().success().stderr(check_warning_message);
 
     // Check assigned unified IDs are correct.
     // For descriptions of test cases, see test_case attribute in input gtfs.
