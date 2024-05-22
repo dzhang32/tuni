@@ -239,6 +239,35 @@ mod tests {
     }
 
     #[test]
+    fn test_transcript_signature() {
+        let mut transcript_signature = TranscriptSignature::from(
+            Rc::from("chr1"),
+            Rc::from("+"),
+            BTreeSet::new(),
+            BTreeSet::new(),
+        );
+
+        transcript_signature
+            .insert_boundary("exon", Rc::from("1"))
+            .unwrap();
+        transcript_signature
+            .insert_boundary("CDS", Rc::from("2"))
+            .unwrap();
+
+        assert_eq!(
+            transcript_signature.exon_boundaries,
+            BTreeSet::from([Rc::from("1")])
+        );
+        assert_eq!(
+            transcript_signature.cds_boundaries,
+            BTreeSet::from([Rc::from("2")])
+        );
+        assert!(transcript_signature
+            .insert_boundary("not_a_feature", Rc::from("1"))
+            .is_err_and(|e| e.to_string().contains("Feature must be 'exon' or 'CDS'")))
+    }
+
+    #[test]
     fn test_read_gtf() {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
