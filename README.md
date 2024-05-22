@@ -1,2 +1,1 @@
-# tuni
-TUNI: Transcript unification for GTF/GFF files outputted by StringTie
+# tuni: Unify transcripts outputted by transcript assembly tools
