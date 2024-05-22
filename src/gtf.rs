@@ -135,9 +135,8 @@ pub fn write_unified_gtf(
     output_path.push(gtf_file_name.to_string());
     output_path.set_extension("tuni.gtf");
 
-    // TODO: Handle errors or check CLI when parsing.
     let output_unified_gtf =
-        File::create(&output_path).map_err(|_| GtfError::FileCreateError(output_path))?;
+        File::create(&output_path).map_err(|_| GtfError::FileCreateError(output_path.clone()))?;
     let mut writer = BufWriter::new(output_unified_gtf);
 
     // GTFs are checked to exist/be readable during cli argument parsing.
@@ -158,8 +157,7 @@ pub fn write_unified_gtf(
             }
         }
 
-        // TODO: Handle errors or check CLI when parsing.
-        writeln!(writer, "{}", line).expect("Unable to write to file.");
+        writeln!(writer, "{}", line).map_err(|_| GtfError::FileWriteError(output_path.clone()))?;
     }
 
     Ok(())

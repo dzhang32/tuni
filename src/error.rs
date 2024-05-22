@@ -28,4 +28,7 @@ pub enum GtfError {
 
     #[error("FileCreateError: Unable to create output file {0:?}")]
     FileCreateError(PathBuf),
+
+    #[error("FileWriteError: Unable to write line to {0:?}")]
+    FileWriteError(PathBuf),
 }
