@@ -29,7 +29,7 @@ fn main() {
     }
 }
 
-pub fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
+fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
     // Due to <https://github.com/clap-rs/clap/issues/4808>, we cannot directly
     // use this as a value_parser.

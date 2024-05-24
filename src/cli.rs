@@ -78,7 +78,7 @@ impl Cli {
     /// 
     /// Returns [`NotADirectoryError`](CliError::NotADirectoryError) if any of the GTFs 
     /// do not exist or do not have the extension "gtf".
-    pub fn parse_output_dir(s: &str) -> Result<PathBuf, CliError> {
+    fn parse_output_dir(s: &str) -> Result<PathBuf, CliError> {
         let output_dir = PathBuf::from(s);
         if !output_dir.is_dir() {
             return Err(CliError::NotADirectoryError(output_dir));
