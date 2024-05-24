@@ -10,21 +10,38 @@ use std::{
     rc::Rc,
 };
 
+/// Transcript ID in the format "transcript_id \"A.1\"" aliased for type annotation readability.
 pub type TranscriptId = Rc<str>;
 
-// exon_boundaries and cds_boundaries must be BTreesSets as
-// 1. we want to use TranscriptSignature as a key later on and HashSet is not hashable
-// 2. we want values to be unique.
+/// Contains all details needed to identify a unique transcript.
+///
+/// If any fields are different between two `TranscriptSignature`s, they
+/// must represent distinct transcripts. Both exons AND CDS regions must be
+/// included to differentiate between transcripts that have:
+/// 1. The same coding regions and different UTR.
+/// 2. The same UTRs and different coding regions.
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TranscriptSignature {
+    /// Chromosome.
     chr: Rc<str>,
+    /// Strand.
     strand: Rc<str>,
+    /// The start and end coordinates of every exon in the transcript.
+    ///
+    /// Must be `BTreesSet`s as:
+    /// 1. `TranscriptSignature` will be used a `HashMap`` key. `HashSet`s are not
+    /// hashable as they do not have an order.
+    /// 2. A `Vec<Rc<str>>` cannot be used as regions are not assumed to be
+    /// sorted in the input GTF.
     exon_boundaries: BTreeSet<Rc<str>>,
+    /// The start and end coordinates of every CDS region in the transcript.
+    ///
+    /// Must be a `BTreeSet` for the same reasons as above.
     cds_boundaries: BTreeSet<Rc<str>>,
 }
 
-// TODO: Add unit tests for TranscriptSignature siststruct.
 impl TranscriptSignature {
+    /// Create `TranscriptSignature`.
     pub fn from(
         chr: Rc<str>,
         strand: Rc<str>,
@@ -38,7 +55,13 @@ impl TranscriptSignature {
             cds_boundaries,
         }
     }
-
+    /// Insert exon/CDS boundary into `TranscriptSignature`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`UnknownFeatureError`](GtfError::UnknownFeatureError) if the
+    /// feature is not "exon" or "CDS". This error likely indicates a bug in
+    /// tuni when filtering GTF lines.
     fn insert_boundary(&mut self, feature: &str, value: Rc<str>) -> Result<(), GtfError> {
         match feature {
             "exon" => {
@@ -53,17 +76,34 @@ impl TranscriptSignature {
     }
 }
 
+/// Parse lines within a GTF file.
+///
+/// `GtfRecord` requires a `transcript_id`. In `tuni`, this is satisfied as
+/// `GtfRecord` are only created from "exon"/"CDS" lines, which should always
+/// contain a `transcript_id`.
 #[derive(Debug, PartialEq)]
 struct GtfRecord {
+    /// Feature e.g. "exon", "transcript", "CDS".
     feature: Rc<str>,
+    /// Strand.
     strand: Rc<str>,
+    /// Chromosome.
     chr: Rc<str>,
+    /// Start coordinate.
     start: Rc<str>,
+    /// End coordinate.
     end: Rc<str>,
+    /// Transcript ID.
     transcript_id: Rc<str>,
 }
 
 impl GtfRecord {
+    /// Create a `GtfRecord` from a line.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MissingTranscriptIdError`](GtfError::MissingTranscriptIdError)
+    /// if the line does not contain a "transcript_id" attribute.
     fn from(line_split: &[&str]) -> Result<GtfRecord, GtfError> {
         let transcript_id = GtfRecord::get_transcript_id(line_split)
             .ok_or(GtfError::MissingTranscriptIdError(line_split.join("\t")))?;
@@ -78,10 +118,15 @@ impl GtfRecord {
         })
     }
 
+    /// Returns true if line represents a exon or CDS, otherwise false.
     fn is_exon_or_cds(line_split: &[&str]) -> bool {
         line_split[2] == "exon" || line_split[2] == "CDS"
     }
 
+    /// Obtain the transcript ID.
+    ///
+    /// This relies on transcript ID attributes being named exactly
+    /// "transcript_id".
     fn get_transcript_id<'a>(line_split: &[&'a str]) -> Option<&'a str> {
         line_split[8]
             .split(';')
