@@ -14,6 +14,8 @@ use unify::TranscriptUnifier;
 fn main() {
     let cli = Cli::parse();
 
+    // By default, warn users.
+    // Warning indicates potentially incorrectly formatted input.
     let log_level = match cli.verbose {
         true => LevelFilter::Info,
         false => LevelFilter::Warn,

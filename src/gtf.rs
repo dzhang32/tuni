@@ -134,6 +134,15 @@ impl GtfRecord {
     }
 }
 
+/// Read unique transcripts from a GTF file.
+///
+/// Using the "transcript_id" as a differentiating key, build a
+/// `TranscriptSignature` for every unique transcript.
+///
+/// # Errors
+///
+/// Returns [`LineReadError`](GtfError::LineReadError) if any line in the GTF
+/// cannot be read.
 pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSignature>, GtfError> {
     info!("{}", gtf_path.display());
 
@@ -154,6 +163,7 @@ pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSigna
             if GtfRecord::is_exon_or_cds(&line_split) {
                 let record = GtfRecord::from(&line_split)?;
 
+                // Only insert chromosome and strand once, upon initialisation.
                 let transcript_signature = gtf_transcripts.entry(record.transcript_id).or_insert(
                     TranscriptSignature::from(
                         record.chr,
@@ -172,6 +182,15 @@ pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSigna
     Ok(gtf_transcripts)
 }
 
+/// Write GTF file with unified transcript IDs.
+///
+/// # Errors
+///
+/// Returns [`FileCreateError`](GtfError::FileCreateError) if the output file
+/// cannot be be created.
+///
+/// Returns [`LineReadError`](GtfError::LineReadError) if any line in the GTF
+/// cannot be read.
 pub fn write_unified_gtf(
     gtf_path: &Path,
     output_dir: &Path,
