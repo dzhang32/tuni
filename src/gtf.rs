@@ -226,12 +226,16 @@ pub fn write_unified_gtf(
     Ok(())
 }
 
+/// Isolate only the GTF file name from full path.
+///
+/// "/path/to/a.gtf" -> "a.gtf"
 pub fn extract_file_name(gtf_path: &Path) -> Rc<str> {
     // We have already checked GTF paths are valid files
     // with a ".gtf" extension during cli argument parsing.
     Rc::from(gtf_path.file_name().unwrap().to_str().unwrap())
 }
 
+/// Open reader that reads GTF line by line.
 fn open_gtf_reader(gtf_path: &Path) -> BufReader<File> {
     // GTFs are checked to exist/be readable during cli argument parsing.
     let gtf = File::open(gtf_path).unwrap();
@@ -240,6 +244,7 @@ fn open_gtf_reader(gtf_path: &Path) -> BufReader<File> {
     BufReader::new(gtf)
 }
 
+/// Open writer that writes GTF line by line.
 fn open_gtf_writer(output_path: &Path) -> Result<BufWriter<File>, GtfError> {
     let unified_gtf = File::create(output_path)
         .map_err(|_| GtfError::FileCreateError(output_path.to_path_buf()))?;
@@ -374,15 +379,15 @@ mod tests {
 
     #[test]
     fn test_write_unified_gtf() {
-        let mut transcript_unifier = TranscriptUnifier::new();
         let gtf_path = PathBuf::from("tests/data/unit/sample_1.gtf");
         let mut gtf_transcripts = read_gtf(&gtf_path).unwrap();
+
+        let mut transcript_unifier = TranscriptUnifier::new();
         transcript_unifier.add_transcripts(Rc::from("sample_1.gtf"), &mut gtf_transcripts);
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("sample_1.tuni.gtf");
-
         write_unified_gtf(&gtf_path, temp_dir.path(), &transcript_unifier).unwrap();
 
         // .collect() as <Vec<&str>> for easier debugging.
