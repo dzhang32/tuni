@@ -146,12 +146,7 @@ impl GtfRecord {
 pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSignature>, GtfError> {
     info!("{}", gtf_path.display());
 
-    // GTFs are checked to exist/be readable during cli argument parsing.
-    let gtf = File::open(gtf_path).unwrap();
-
-    // Avoid reading the entire file into memory at once.
-    let reader = BufReader::new(gtf);
-    // TODO: better name?
+    let reader = open_gtf_reader(gtf_path);
     let mut gtf_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
     for line in reader.lines() {
@@ -208,9 +203,7 @@ pub fn write_unified_gtf(
         File::create(&output_path).map_err(|_| GtfError::FileCreateError(output_path.clone()))?;
     let mut writer = BufWriter::new(output_unified_gtf);
 
-    // GTFs are checked to exist/be readable during cli argument parsing.
-    let gtf = File::open(gtf_path).unwrap();
-    let reader = BufReader::new(gtf);
+    let reader = open_gtf_reader(gtf_path);
 
     for line in reader.lines() {
         let mut line = line.map_err(|_| GtfError::LineReadError(gtf_path.to_path_buf()))?;
@@ -239,6 +232,14 @@ pub fn extract_file_name(gtf_path: &Path) -> Rc<str> {
     // We have already checked GTF paths are valid files
     // with a ".gtf" extension during cli argument parsing.
     Rc::from(gtf_path.file_name().unwrap().to_str().unwrap())
+}
+
+fn open_gtf_reader(gtf_path: &Path) -> BufReader<File> {
+    // GTFs are checked to exist/be readable during cli argument parsing.
+    let gtf = File::open(gtf_path).unwrap();
+
+    // Avoid reading the entire file into memory at once.
+    BufReader::new(gtf)
 }
 
 #[cfg(test)]
