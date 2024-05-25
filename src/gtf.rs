@@ -197,13 +197,10 @@ pub fn write_unified_gtf(
     output_path.push(gtf_file_name.to_string());
     output_path.set_extension("tuni.gtf");
 
-    info!("{}", gtf_path.display());
-
-    let output_unified_gtf =
-        File::create(&output_path).map_err(|_| GtfError::FileCreateError(output_path.clone()))?;
-    let mut writer = BufWriter::new(output_unified_gtf);
+    info!("{}", output_path.display());
 
     let reader = open_gtf_reader(gtf_path);
+    let mut writer = open_gtf_writer(&output_path)?;
 
     for line in reader.lines() {
         let mut line = line.map_err(|_| GtfError::LineReadError(gtf_path.to_path_buf()))?;
@@ -215,6 +212,7 @@ pub fn write_unified_gtf(
             if let Some(transcript_id) = transcript_id {
                 let unified_id = transcript_unifier
                     .get_unified_id(&[Rc::clone(&gtf_file_name), Rc::from(transcript_id)]);
+
                 match unified_id {
                     Some(unified_id) => line.push_str(&format!(r#" tuni_id "{}";"#, unified_id)),
                     None => warn!("Unrecognised transcript ID found {}", transcript_id),
@@ -240,6 +238,12 @@ fn open_gtf_reader(gtf_path: &Path) -> BufReader<File> {
 
     // Avoid reading the entire file into memory at once.
     BufReader::new(gtf)
+}
+
+fn open_gtf_writer(output_path: &Path) -> Result<BufWriter<File>, GtfError> {
+    let unified_gtf = File::create(output_path)
+        .map_err(|_| GtfError::FileCreateError(output_path.to_path_buf()))?;
+    Ok(BufWriter::new(unified_gtf))
 }
 
 #[cfg(test)]
