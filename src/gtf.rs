@@ -10,7 +10,7 @@ use std::{
     rc::Rc,
 };
 
-/// Transcript ID in the format "transcript_id \"A.1\"" aliased for type annotation readability.
+/// Transcript ID in the format "transcript_id \"A.1\"".
 pub type TranscriptId = Rc<str>;
 
 /// Contains all details needed to identify a unique transcript.
@@ -24,8 +24,10 @@ pub type TranscriptId = Rc<str>;
 pub struct TranscriptSignature {
     /// Chromosome.
     chr: Rc<str>,
+
     /// Strand.
     strand: Rc<str>,
+
     /// The start and end coordinates of every exon in the transcript.
     ///
     /// Must be `BTreesSet`s as:
@@ -34,6 +36,7 @@ pub struct TranscriptSignature {
     /// 2. A `Vec<Rc<str>>` cannot be used as regions are not assumed to be
     /// sorted in the input GTF.
     exon_boundaries: BTreeSet<Rc<str>>,
+
     /// The start and end coordinates of every CDS region in the transcript.
     ///
     /// Must be a `BTreeSet` for the same reasons as above.
@@ -55,6 +58,7 @@ impl TranscriptSignature {
             cds_boundaries,
         }
     }
+
     /// Insert exon/CDS boundary into `TranscriptSignature`.
     ///
     /// # Errors
@@ -85,14 +89,19 @@ impl TranscriptSignature {
 struct GtfRecord {
     /// Feature e.g. "exon", "transcript", "CDS".
     feature: Rc<str>,
+
     /// Strand.
     strand: Rc<str>,
+
     /// Chromosome.
     chr: Rc<str>,
+
     /// Start coordinate.
     start: Rc<str>,
+
     /// End coordinate.
     end: Rc<str>,
+
     /// Transcript ID.
     transcript_id: Rc<str>,
 }
@@ -383,7 +392,7 @@ mod tests {
         let mut gtf_transcripts = read_gtf(&gtf_path).unwrap();
 
         let mut transcript_unifier = TranscriptUnifier::new();
-        transcript_unifier.add_transcripts(Rc::from("sample_1.gtf"), &mut gtf_transcripts);
+        transcript_unifier.group_transcripts(Rc::from("sample_1.gtf"), &mut gtf_transcripts);
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();
