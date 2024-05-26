@@ -4,37 +4,67 @@ use std::{
     rc::Rc,
 };
 
+/// Sample grouped with transcript ID.
+///
+/// Used to uniquely identify transcripts across samples, as separate samples
+/// could use the same ID for different transcripts.
 pub type SampleTranscriptId = [Rc<str>; 2];
+
+/// `UnifiedId` will be same for the same transcript across different samples.
 pub type UnifiedId = Rc<str>;
 
+/// Forms `UnifiedId` along with an integer e.g. "tuni_1".
 const UNIFIED_ID_PREFIX: &str = "tuni_";
 
+/// Unify transcript IDs across different samples.
+///
+/// Groups together same transcripts (that share the same `TranscriptSignature`)
+/// across different samples, then creates a `UnifiedId` that identifies each
+/// transcript.
 pub struct TranscriptUnifier {
-    transcripts: BTreeMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
+    /// Using the `TranscriptSignature` as a key, group transcripts across
+    /// different samples.
+    ///
+    /// BTreeMap here trades some performance (as insertion/lookup is log(N))
+    /// to retain order of keys, so each transcript ID is given the same
+    /// unified ID every time. This is helpful for testing but could be
+    /// swapped for a HashMap if performance is key.
+    grouped_transcripts: BTreeMap<TranscriptSignature, HashSet<SampleTranscriptId>>,
+
+    /// Link each sample transcript ID to a unified ID.
     unified_transcripts: HashMap<SampleTranscriptId, UnifiedId>,
 }
 
 impl TranscriptUnifier {
+    /// Initialise `TranscriptUnifier`.
     pub fn new() -> TranscriptUnifier {
         TranscriptUnifier {
-            transcripts: BTreeMap::new(),
+            grouped_transcripts: BTreeMap::new(),
             unified_transcripts: HashMap::new(),
         }
     }
 
-    pub fn add_transcripts(
+    /// Group transcripts across different samples under the same
+    /// `TranscriptSignature`.
+    pub fn group_transcripts(
         &mut self,
         gtf_file_name: Rc<str>,
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
+        // TODO: try refactoring .drain() for use of Rc<TranscriptSignature>
         for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
-            let sample_transcript_id = self.transcripts.entry(transcript_signature).or_default();
+            let sample_transcript_id = self
+                .grouped_transcripts
+                .entry(transcript_signature)
+                .or_default();
             sample_transcript_id.insert([Rc::clone(&gtf_file_name), Rc::clone(&transcript_id)]);
         }
     }
 
+    /// Create a unified ID for each unique `TranscriptSignature`.
     pub fn unify_transcripts(&mut self) {
-        for (i, sample_transcript_ids) in self.transcripts.values_mut().enumerate() {
+        for (i, sample_transcript_ids) in self.grouped_transcripts.values_mut().enumerate() {
+            // TODO: try refactoring .drain() for use of Rc<SampleTranscriptId>
             for sample_transcript_id in sample_transcript_ids.drain() {
                 self.unified_transcripts.insert(
                     sample_transcript_id,
@@ -44,8 +74,10 @@ impl TranscriptUnifier {
         }
     }
 
+    /// Obtain unified ID based on (sample, transcript ID).
+    ///
+    /// Returns unified ID if present, otherwise `None`.
     pub fn get_unified_id(&self, sample_transcript_id: &SampleTranscriptId) -> Option<&Rc<str>> {
-        // TODO: Handle errors better.
         self.unified_transcripts.get(sample_transcript_id)
     }
 }
@@ -70,7 +102,7 @@ mod tests {
         for gtf_path in gtf_paths {
             let mut gtf_transcripts = gtf::read_gtf(&gtf_path).unwrap();
             let gtf_file_name = gtf::extract_file_name(&gtf_path);
-            transcript_unifier.add_transcripts(gtf_file_name, &mut gtf_transcripts);
+            transcript_unifier.group_transcripts(gtf_file_name, &mut gtf_transcripts);
         }
 
         let expected_transcripts = BTreeMap::from([
@@ -106,7 +138,7 @@ mod tests {
             ),
         ]);
 
-        assert_eq!(transcript_unifier.transcripts, expected_transcripts);
+        assert_eq!(transcript_unifier.grouped_transcripts, expected_transcripts);
 
         transcript_unifier.unify_transcripts();
 
