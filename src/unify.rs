@@ -51,7 +51,6 @@ impl TranscriptUnifier {
         gtf_file_name: Rc<str>,
         gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
-        // TODO: try refactoring .drain() for use of Rc<TranscriptSignature>
         for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
             let sample_transcript_id = self
                 .grouped_transcripts
@@ -64,7 +63,6 @@ impl TranscriptUnifier {
     /// Create a unified ID for each unique `TranscriptSignature`.
     pub fn unify_transcripts(&mut self) {
         for (i, sample_transcript_ids) in self.grouped_transcripts.values_mut().enumerate() {
-            // TODO: try refactoring .drain() for use of Rc<SampleTranscriptId>
             for sample_transcript_id in sample_transcript_ids.drain() {
                 self.unified_transcripts.insert(
                     sample_transcript_id,
