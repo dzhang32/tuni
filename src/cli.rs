@@ -11,7 +11,7 @@ use crate::error::CliError;
     about = "tuni: Unify transcripts outputted by transcript assembly tools"
 )]
 pub struct Cli {
-    /// A text file containing GTF paths.
+    /// A text file containing GTF/GFF paths.
     #[arg(
         short, 
         long, 
@@ -20,7 +20,7 @@ pub struct Cli {
     )]
     pub gtf_paths: PathBuf,
 
-    /// Directory where outputted GTFs with unified transcripts will be stored.
+    /// Directory where outputted GTF/GFFs with unified transcripts will be stored.
     #[arg(
         short, 
         long, 
@@ -41,33 +41,34 @@ pub struct Cli {
 
 
 impl Cli {
-    /// Parse file containing GTFs paths.
+    /// Parse file containing GTF/GFFs paths.
     /// 
-    /// Returns GTF paths on success, otherwise returns an error.
+    /// Returns GTF/GFF paths on success, otherwise returns an error.
     /// 
     /// # Errors 
     /// 
     /// Returns [`FileReadError`](CliError::FileReadError) if the file 
-    /// containing GTFs or any of the GTFs cannot be read.
+    /// containing GTF/GFFs or any of the GTF/GFFs cannot be read.
     /// 
-    /// Returns [`GtfParseError`](CliError::GtfParseError) if any of the GTFs 
-    /// do not exist or do not have the extension "gtf".
-    pub fn parse_gtf_paths(gtf_paths: PathBuf) -> Result<Vec<PathBuf>, CliError> {
-        let gtf_paths = fs::read_to_string(&gtf_paths)
-            .map_err(|_| CliError::FileReadError(gtf_paths))?
+    /// Returns [`GtfGffParseError`](CliError::GtfGffParseError) if any of the GTF/GFFs 
+    /// do not exist or do not have the extension ".gtf"/".gff".
+    pub fn parse_gtf_gff_paths(gtf_gff_paths: PathBuf) -> Result<Vec<PathBuf>, CliError> {
+        let gtf_gff_paths = fs::read_to_string(&gtf_gff_paths)
+            .map_err(|_| CliError::FileReadError(gtf_gff_paths))?
             .lines()
             .map(PathBuf::from)
             .collect::<Vec<PathBuf>>();
 
-        for gtf_path in &gtf_paths {
-            if !gtf_path.is_file() || !gtf_path.extension().is_some_and(|x| x == "gtf") {
-                return Err(CliError::GtfParseError(gtf_path.clone()))
+        for gtf_gff_path in &gtf_gff_paths {
+            // TODO: add check for gff and all files have the same ext.
+            if !gtf_gff_path.is_file() || !gtf_gff_path.extension().is_some_and(|x| x == "gtf") {
+                return Err(CliError::GtfGffParseError(gtf_gff_path.clone()))
             }
             // open() will return an error if the file is unreadable e.g. due to permissions.
-            File::open(gtf_path).map_err(|_| CliError::FileReadError(gtf_path.clone()))?;
+            File::open(gtf_gff_path).map_err(|_| CliError::FileReadError(gtf_gff_path.clone()))?;
         }
 
-        Ok(gtf_paths)
+        Ok(gtf_gff_paths)
     }
 
     /// Parse output directory.
@@ -76,8 +77,8 @@ impl Cli {
     /// 
     /// # Errors
     /// 
-    /// Returns [`NotADirectoryError`](CliError::NotADirectoryError) if any of the GTFs 
-    /// do not exist or do not have the extension "gtf".
+    /// Returns [`NotADirectoryError`](CliError::NotADirectoryError) if any of the GTF/GFFs 
+    /// do not exist or do not have the extension ".gtf"/".gff".
     fn parse_output_dir(s: &str) -> Result<PathBuf, CliError> {
         let output_dir = PathBuf::from(s);
         if !output_dir.is_dir() {
@@ -93,18 +94,18 @@ impl Cli {
 mod tests {
     use super::*;
 
-    // Test that cli will error if GTF paths
-    // 1. don't exist, 2. are not readable or lack the ".gtf" extension.
+    // Test that cli will error if GTF/GFF paths
+    // 1. don't exist, 2. are not readable or lack the ".gtf"/".gff" extension.
     #[test]
     fn test_parse_gtf_paths() {
-        let result = Cli::parse_gtf_paths(PathBuf::from("does_not_exist.txt"));
+        let result = Cli::parse_gtf_gff_paths(PathBuf::from("does_not_exist.txt"));
         assert!(result.is_err_and(|e| e.to_string().contains("Unable to read file")));
 
         let result =
-            Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths_missing_gtf.txt"));
-        assert!(result.is_err_and(|e| e.to_string().contains("GTFs must be a file with the '.gtf' extension")));
+            Cli::parse_gtf_gff_paths(PathBuf::from("tests/data/unit/gtf_paths_missing_gtf.txt"));
+        assert!(result.is_err_and(|e| e.to_string().contains("GTF/GFF must be a file with the '.gtf' or '.gff' extension")));
 
-        let result = Cli::parse_gtf_paths(PathBuf::from("tests/data/unit/gtf_paths.txt"));
+        let result = Cli::parse_gtf_gff_paths(PathBuf::from("tests/data/unit/gtf_paths.txt"));
         assert!(result.is_ok());
     }
 

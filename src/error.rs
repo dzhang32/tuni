@@ -10,18 +10,20 @@ pub enum CliError {
     /// The file provided is unreadable.
     #[error("FileReadError: Unable to read file {0:?}")]
     FileReadError(PathBuf),
-    /// The GTF provided is not a file or does not have a ".gtf" extension.
-    #[error("GtfParseError: GTFs must be a file with the '.gtf' extension, found {0:?}")]
-    GtfParseError(PathBuf),
+    /// The GTF/GFF provided is not a file or does not have a ".gtf"/".gff" extension.
+    #[error(
+        "GtfGffParseError: GTF/GFF must be a file with the '.gtf' or '.gff' extension, found {0:?}"
+    )]
+    GtfGffParseError(PathBuf),
     /// The path does not point to a directory (e.g. it is a file).
     #[error("NotADirectoryError: output_dir must be an existing directory {0:?}")]
     NotADirectoryError(PathBuf),
 }
 
-/// Errors resulting from processing GTF lines.
+/// Errors resulting from processing GTF/GFF lines.
 #[allow(clippy::enum_variant_names)]
 #[derive(Error, Debug)]
-pub enum GtfError {
+pub enum GtfGffError {
     /// The ("exon" or "CDS") record does not contain the "transcript_id" attribute.
     #[error("MissingTranscriptIdError: No transcript_id found in line {0:?}")]
     MissingTranscriptIdError(String),
@@ -29,7 +31,7 @@ pub enum GtfError {
     /// error appears, it likely points to a tuni bug in filtering.
     #[error("UnknownFeatureError: Feature must be 'exon' or 'CDS', found {0:?}.")]
     UnknownFeatureError(String),
-    /// The line from the GTF could not be read.
+    /// The line from the GTF/GFF could not be read.
     #[error("LineReadError: Unable to read line in {0:?}")]
     LineReadError(PathBuf),
     /// The file could not be created.

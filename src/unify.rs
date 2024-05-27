@@ -1,4 +1,4 @@
-use crate::gtf::{TranscriptId, TranscriptSignature};
+use crate::gtf_gff::{TranscriptId, TranscriptSignature};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     rc::Rc,
@@ -48,15 +48,15 @@ impl TranscriptUnifier {
     /// `TranscriptSignature`.
     pub fn group_transcripts(
         &mut self,
-        gtf_file_name: Rc<str>,
-        gtf_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
+        gtf_gff_file_name: Rc<str>,
+        gtf_gff_transcripts: &mut HashMap<TranscriptId, TranscriptSignature>,
     ) {
-        for (transcript_id, transcript_signature) in gtf_transcripts.drain() {
+        for (transcript_id, transcript_signature) in gtf_gff_transcripts.drain() {
             let sample_transcript_id = self
                 .grouped_transcripts
                 .entry(transcript_signature)
                 .or_default();
-            sample_transcript_id.insert([Rc::clone(&gtf_file_name), Rc::clone(&transcript_id)]);
+            sample_transcript_id.insert([Rc::clone(&gtf_gff_file_name), Rc::clone(&transcript_id)]);
         }
     }
 
@@ -83,7 +83,7 @@ impl TranscriptUnifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gtf;
+    use crate::gtf_gff;
     use std::collections::BTreeSet;
     use std::path::PathBuf;
 
@@ -93,14 +93,14 @@ mod tests {
 
         // Sample 2 is an unsorted GTF, ensuring unification works
         // regardless if input is sorted.
-        let gtf_paths = [
+        let gtf_gff_paths = [
             PathBuf::from("tests/data/unit/sample_1.gtf"),
             PathBuf::from("tests/data/unit/sample_2.gtf"),
         ];
-        for gtf_path in gtf_paths {
-            let mut gtf_transcripts = gtf::read_gtf(&gtf_path).unwrap();
-            let gtf_file_name = gtf::extract_file_name(&gtf_path);
-            transcript_unifier.group_transcripts(gtf_file_name, &mut gtf_transcripts);
+        for gtf_gff_path in gtf_gff_paths {
+            let mut gtf_gff_transcripts = gtf_gff::read_gtf_gff(&gtf_gff_path).unwrap();
+            let gtf_file_name = gtf_gff::extract_file_name(&gtf_gff_path);
+            transcript_unifier.group_transcripts(gtf_file_name, &mut gtf_gff_transcripts);
         }
 
         let expected_transcripts = BTreeMap::from([

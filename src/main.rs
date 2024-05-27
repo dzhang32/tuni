@@ -1,6 +1,6 @@
 mod cli;
 mod error;
-mod gtf;
+mod gtf_gff;
 mod unify;
 
 use clap::Parser;
@@ -35,14 +35,14 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
     // Due to <https://github.com/clap-rs/clap/issues/4808>, value_parser cannot
     // directly use this function.
-    let gtf_paths = Cli::parse_gtf_paths(cli.gtf_paths)?;
+    let gtf_gff_paths = Cli::parse_gtf_gff_paths(cli.gtf_paths)?;
 
-    info!("Reading GTFs");
+    info!("Reading GTF/GFFs");
 
-    for gtf_path in &gtf_paths {
-        let gtf_file_name = gtf::extract_file_name(gtf_path);
-        let mut gtf_transcripts = gtf::read_gtf(gtf_path)?;
-        transcript_unifier.group_transcripts(gtf_file_name, &mut gtf_transcripts);
+    for gtf_gff_path in &gtf_gff_paths {
+        let gtf_gff_file_name = gtf_gff::extract_file_name(gtf_gff_path);
+        let mut gtf_gff_transcripts = gtf_gff::read_gtf_gff(gtf_gff_path)?;
+        transcript_unifier.group_transcripts(gtf_gff_file_name, &mut gtf_gff_transcripts);
     }
 
     info!("Unifying transcripts");
@@ -51,8 +51,8 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
 
     info!("Writing unified transcripts");
 
-    for gtf_path in &gtf_paths {
-        gtf::write_unified_gtf(gtf_path, &cli.output_dir, &transcript_unifier)?
+    for gtf_gff_path in &gtf_gff_paths {
+        gtf_gff::write_unified_gtf_gff(gtf_gff_path, &cli.output_dir, &transcript_unifier)?
     }
 
     info!("Done");

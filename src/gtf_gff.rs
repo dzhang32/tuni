@@ -1,4 +1,4 @@
-use crate::error::GtfError;
+use crate::error::GtfGffError;
 use crate::unify::TranscriptUnifier;
 use log::{info, warn};
 
@@ -34,7 +34,7 @@ pub struct TranscriptSignature {
     /// 1. `TranscriptSignature` will be used a `HashMap`` key. `HashSet`s are not
     /// hashable as they do not have an order.
     /// 2. A `Vec<Rc<str>>` cannot be used as regions are not assumed to be
-    /// sorted in the input GTF.
+    /// sorted in the input GTF/GFF.
     exon_boundaries: BTreeSet<Rc<str>>,
 
     /// The start and end coordinates of every CDS region in the transcript.
@@ -63,10 +63,10 @@ impl TranscriptSignature {
     ///
     /// # Errors
     ///
-    /// Returns [`UnknownFeatureError`](GtfError::UnknownFeatureError) if the
+    /// Returns [`UnknownFeatureError`](GtfGffError::UnknownFeatureError) if the
     /// feature is not "exon" or "CDS". This error likely indicates a bug in
-    /// tuni when filtering GTF lines.
-    fn insert_boundary(&mut self, feature: &str, value: Rc<str>) -> Result<(), GtfError> {
+    /// tuni when filtering GTF/GFF lines.
+    fn insert_boundary(&mut self, feature: &str, value: Rc<str>) -> Result<(), GtfGffError> {
         match feature {
             "exon" => {
                 self.exon_boundaries.insert(value);
@@ -74,19 +74,19 @@ impl TranscriptSignature {
             "CDS" => {
                 self.cds_boundaries.insert(value);
             }
-            other => return Err(GtfError::UnknownFeatureError(other.to_string())),
+            other => return Err(GtfGffError::UnknownFeatureError(other.to_string())),
         };
         Ok(())
     }
 }
 
-/// Parse lines within a GTF file.
+/// Parse lines within a GTF/GFF file.
 ///
-/// `GtfRecord` requires a `transcript_id`. In `tuni`, this is satisfied as
-/// `GtfRecord` are only created from "exon"/"CDS" lines, which should always
+/// `GtfGffRecord` requires a `transcript_id`. In `tuni`, this is satisfied as
+/// `GtfGffRecord` are only created from "exon"/"CDS" lines, which should always
 /// contain a `transcript_id`.
 #[derive(Debug, PartialEq)]
-struct GtfRecord {
+struct GtfGffRecord {
     /// Feature e.g. "exon", "transcript", "CDS".
     feature: Rc<str>,
 
@@ -106,18 +106,18 @@ struct GtfRecord {
     transcript_id: Rc<str>,
 }
 
-impl GtfRecord {
-    /// Create a `GtfRecord` from a line.
+impl GtfGffRecord {
+    /// Create a `GtfGffRecord` from a line.
     ///
     /// # Errors
     ///
-    /// Returns [`MissingTranscriptIdError`](GtfError::MissingTranscriptIdError)
+    /// Returns [`MissingTranscriptIdError`](GtfGffError::MissingTranscriptIdError)
     /// if the line does not contain a "transcript_id" attribute.
-    fn from(line_split: &[&str]) -> Result<GtfRecord, GtfError> {
-        let transcript_id = GtfRecord::get_transcript_id(line_split)
-            .ok_or(GtfError::MissingTranscriptIdError(line_split.join("\t")))?;
+    fn from(line_split: &[&str]) -> Result<GtfGffRecord, GtfGffError> {
+        let transcript_id = GtfGffRecord::get_transcript_id(line_split)
+            .ok_or(GtfGffError::MissingTranscriptIdError(line_split.join("\t")))?;
 
-        Ok(GtfRecord {
+        Ok(GtfGffRecord {
             chr: Rc::from(line_split[0]),
             feature: Rc::from(line_split[2]),
             strand: Rc::from(line_split[6]),
@@ -143,39 +143,41 @@ impl GtfRecord {
     }
 }
 
-/// Read unique transcripts from a GTF file.
+/// Read unique transcripts from a GTF/GFF file.
 ///
 /// Using the "transcript_id" as a differentiating key, build a
 /// `TranscriptSignature` for every unique transcript.
 ///
 /// # Errors
 ///
-/// Returns [`LineReadError`](GtfError::LineReadError) if any line in the GTF
-/// cannot be read.
-pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSignature>, GtfError> {
-    info!("{}", gtf_path.display());
+/// Returns [`LineReadError`](GtfGffError::LineReadError) if any line in the
+/// GTF/GFF cannot be read.
+pub fn read_gtf_gff(
+    gtf_gff_path: &Path,
+) -> Result<HashMap<TranscriptId, TranscriptSignature>, GtfGffError> {
+    info!("{}", gtf_gff_path.display());
 
-    let reader = open_gtf_reader(gtf_path);
-    let mut gtf_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
+    let reader = open_gtf_gff_reader(gtf_gff_path);
+    let mut gtf_gff_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
     for line in reader.lines() {
-        let line = line.map_err(|_| GtfError::LineReadError(gtf_path.to_path_buf()))?;
+        let line = line.map_err(|_| GtfGffError::LineReadError(gtf_gff_path.to_path_buf()))?;
 
         if !line.starts_with('#') {
             let line_split = line.split('\t').collect::<Vec<&str>>();
 
-            if GtfRecord::is_exon_or_cds(&line_split) {
-                let record = GtfRecord::from(&line_split)?;
+            if GtfGffRecord::is_exon_or_cds(&line_split) {
+                let record = GtfGffRecord::from(&line_split)?;
 
                 // Only insert chromosome and strand once, upon initialisation.
-                let transcript_signature = gtf_transcripts.entry(record.transcript_id).or_insert(
-                    TranscriptSignature::from(
+                let transcript_signature = gtf_gff_transcripts
+                    .entry(record.transcript_id)
+                    .or_insert(TranscriptSignature::from(
                         record.chr,
                         record.strand,
                         BTreeSet::new(),
                         BTreeSet::new(),
-                    ),
-                );
+                    ));
 
                 transcript_signature.insert_boundary(&record.feature, record.start)?;
                 transcript_signature.insert_boundary(&record.feature, record.end)?;
@@ -183,44 +185,44 @@ pub fn read_gtf(gtf_path: &Path) -> Result<HashMap<TranscriptId, TranscriptSigna
         }
     }
 
-    Ok(gtf_transcripts)
+    Ok(gtf_gff_transcripts)
 }
 
-/// Write GTF file with unified transcript IDs.
+/// Write GTF/GFF file with unified transcript IDs.
 ///
 /// # Errors
 ///
-/// Returns [`FileCreateError`](GtfError::FileCreateError) if the output file
+/// Returns [`FileCreateError`](GtfGffError::FileCreateError) if the output file
 /// cannot be be created.
 ///
-/// Returns [`LineReadError`](GtfError::LineReadError) if any line in the GTF
-/// cannot be read.
-pub fn write_unified_gtf(
-    gtf_path: &Path,
+/// Returns [`LineReadError`](GtfGffError::LineReadError) if any line in the
+/// GTF/GFF cannot be read.
+pub fn write_unified_gtf_gff(
+    gtf_gff_path: &Path,
     output_dir: &Path,
     transcript_unifier: &TranscriptUnifier,
-) -> Result<(), GtfError> {
-    let gtf_file_name = extract_file_name(gtf_path);
+) -> Result<(), GtfGffError> {
+    let gtf_gff_file_name = extract_file_name(gtf_gff_path);
 
     let mut output_path = output_dir.to_path_buf();
-    output_path.push(gtf_file_name.to_string());
+    output_path.push(gtf_gff_file_name.to_string());
     output_path.set_extension("tuni.gtf");
 
     info!("{}", output_path.display());
 
-    let reader = open_gtf_reader(gtf_path);
-    let mut writer = open_gtf_writer(&output_path)?;
+    let reader = open_gtf_gff_reader(gtf_gff_path);
+    let mut writer = open_gtf_gff_writer(&output_path)?;
 
     for line in reader.lines() {
-        let mut line = line.map_err(|_| GtfError::LineReadError(gtf_path.to_path_buf()))?;
+        let mut line = line.map_err(|_| GtfGffError::LineReadError(gtf_gff_path.to_path_buf()))?;
 
         if !line.starts_with('#') {
             let line_split = line.split('\t').collect::<Vec<&str>>();
-            let transcript_id = GtfRecord::get_transcript_id(&line_split);
+            let transcript_id = GtfGffRecord::get_transcript_id(&line_split);
 
             if let Some(transcript_id) = transcript_id {
                 let unified_id = transcript_unifier
-                    .get_unified_id(&[Rc::clone(&gtf_file_name), Rc::from(transcript_id)]);
+                    .get_unified_id(&[Rc::clone(&gtf_gff_file_name), Rc::from(transcript_id)]);
 
                 match unified_id {
                     Some(unified_id) => line.push_str(&format!(r#" tuni_id "{}";"#, unified_id)),
@@ -229,35 +231,36 @@ pub fn write_unified_gtf(
             }
         }
 
-        writeln!(writer, "{}", line).map_err(|_| GtfError::FileWriteError(output_path.clone()))?;
+        writeln!(writer, "{}", line)
+            .map_err(|_| GtfGffError::FileWriteError(output_path.clone()))?;
     }
 
     Ok(())
 }
 
-/// Isolate only the GTF file name from full path.
+/// Isolate only the GTF/GFF file name from full path.
 ///
 /// "/path/to/a.gtf" -> "a.gtf"
-pub fn extract_file_name(gtf_path: &Path) -> Rc<str> {
-    // We have already checked GTF paths are valid files
-    // with a ".gtf" extension during cli argument parsing.
-    Rc::from(gtf_path.file_name().unwrap().to_str().unwrap())
+pub fn extract_file_name(gtf_gff_path: &Path) -> Rc<str> {
+    // We have already checked GTF/GFF paths are valid files
+    // with a ".gtf"/".gff" extension during cli argument parsing.
+    Rc::from(gtf_gff_path.file_name().unwrap().to_str().unwrap())
 }
 
-/// Open reader that reads GTF line by line.
-fn open_gtf_reader(gtf_path: &Path) -> BufReader<File> {
+/// Open reader that reads GTF/GFF line by line.
+fn open_gtf_gff_reader(gtf_gff_path: &Path) -> BufReader<File> {
     // GTFs are checked to exist/be readable during cli argument parsing.
-    let gtf = File::open(gtf_path).unwrap();
+    let gtf_gff = File::open(gtf_gff_path).unwrap();
 
     // Avoid reading the entire file into memory at once.
-    BufReader::new(gtf)
+    BufReader::new(gtf_gff)
 }
 
-/// Open writer that writes GTF line by line.
-fn open_gtf_writer(output_path: &Path) -> Result<BufWriter<File>, GtfError> {
-    let unified_gtf = File::create(output_path)
-        .map_err(|_| GtfError::FileCreateError(output_path.to_path_buf()))?;
-    Ok(BufWriter::new(unified_gtf))
+/// Open writer that writes GTF/GFF line by line.
+fn open_gtf_gff_writer(output_path: &Path) -> Result<BufWriter<File>, GtfGffError> {
+    let unified_gtf_gff = File::create(output_path)
+        .map_err(|_| GtfGffError::FileCreateError(output_path.to_path_buf()))?;
+    Ok(BufWriter::new(unified_gtf_gff))
 }
 
 #[cfg(test)]
@@ -270,13 +273,13 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_gtfrecord_from() {
+    fn test_gtf_gff_record_from() {
         let line = r#"chr1	RefSeq	exon	1	2	.	+	.	transcript_id "A";"#;
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
         assert_eq!(
-            GtfRecord::from(&line_split).unwrap(),
-            GtfRecord {
+            GtfGffRecord::from(&line_split).unwrap(),
+            GtfGffRecord {
                 feature: Rc::from("exon"),
                 strand: Rc::from("+"),
                 chr: Rc::from("chr1"),
@@ -289,7 +292,7 @@ mod tests {
         // No transcript_id field.
         let line = r#"chr1	RefSeq	gene	1	2	.	+	.	gene_id "A";"#;
         let line_split = line.split('\t').collect::<Vec<&str>>();
-        assert!(GtfRecord::from(&line_split)
+        assert!(GtfGffRecord::from(&line_split)
             .is_err_and(|e| e.to_string().contains("No transcript_id found in line")))
     }
 
@@ -300,7 +303,7 @@ mod tests {
     fn test_is_exon_or_cds(#[case] line: &str, #[case] expected: bool) {
         let line_split = line.split('\t').collect::<Vec<&str>>();
 
-        assert_eq!(GtfRecord::is_exon_or_cds(&line_split), expected);
+        assert_eq!(GtfGffRecord::is_exon_or_cds(&line_split), expected);
     }
 
     #[rstest]
@@ -319,11 +322,11 @@ mod tests {
         match expected {
             Some(transcript_id) => {
                 assert_eq!(
-                    GtfRecord::get_transcript_id(&line_split).unwrap(),
+                    GtfGffRecord::get_transcript_id(&line_split).unwrap(),
                     transcript_id
                 );
             }
-            None => assert!(GtfRecord::get_transcript_id(&line_split).is_none()),
+            None => assert!(GtfGffRecord::get_transcript_id(&line_split).is_none()),
         }
     }
 
@@ -357,7 +360,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_gtf() {
+    fn test_read_gtf_gff() {
         let mut expected_transcripts: HashMap<TranscriptId, TranscriptSignature> = HashMap::new();
 
         expected_transcripts.insert(
@@ -381,23 +384,23 @@ mod tests {
         );
 
         assert_eq!(
-            read_gtf(&PathBuf::from("tests/data/unit/sample_1.gtf")).unwrap(),
+            read_gtf_gff(&PathBuf::from("tests/data/unit/sample_1.gtf")).unwrap(),
             expected_transcripts
         )
     }
 
     #[test]
     fn test_write_unified_gtf() {
-        let gtf_path = PathBuf::from("tests/data/unit/sample_1.gtf");
-        let mut gtf_transcripts = read_gtf(&gtf_path).unwrap();
+        let gtf_gff_path = PathBuf::from("tests/data/unit/sample_1.gtf");
+        let mut gtf_gff_transcripts = read_gtf_gff(&gtf_gff_path).unwrap();
 
         let mut transcript_unifier = TranscriptUnifier::new();
-        transcript_unifier.group_transcripts(Rc::from("sample_1.gtf"), &mut gtf_transcripts);
+        transcript_unifier.group_transcripts(Rc::from("sample_1.gtf"), &mut gtf_gff_transcripts);
         transcript_unifier.unify_transcripts();
 
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("sample_1.tuni.gtf");
-        write_unified_gtf(&gtf_path, temp_dir.path(), &transcript_unifier).unwrap();
+        write_unified_gtf_gff(&gtf_gff_path, temp_dir.path(), &transcript_unifier).unwrap();
 
         // .collect() as <Vec<&str>> for easier debugging.
         assert_eq!(
