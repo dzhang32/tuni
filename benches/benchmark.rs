@@ -7,7 +7,7 @@ pub fn benchmark_tuni(c: &mut Criterion) {
     let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
     let temp_dir = tempdir().unwrap();
 
-    cmd.arg(black_box("--gtf-paths"))
+    cmd.arg(black_box("--gtf-gff-path"))
         .arg(black_box("tests/data/benches/gtf_paths.txt"))
         .arg(black_box("--output-dir"))
         .arg(temp_dir.path());
