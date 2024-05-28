@@ -10,7 +10,7 @@ fn test_tuni() {
 
     // RUST_LOG=INFO env var is used to ensure env_logger stores logs to the stderr.
     cmd.env("RUST_LOG", "INFO")
-        .arg("--gtf-paths")
+        .arg("--gtf-gff-path")
         .arg("tests/data/integration/gtf_paths.txt")
         .arg("--output-dir")
         .arg(temp_dir.path());

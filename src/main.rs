@@ -35,7 +35,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
     // Due to <https://github.com/clap-rs/clap/issues/4808>, value_parser cannot
     // directly use this function.
-    let gtf_gff_paths = Cli::parse_gtf_gff_paths(cli.gtf_paths)?;
+    let gtf_gff_paths = Cli::parse_gtf_gff_paths(cli.gtf_gff_path)?;
 
     info!("Reading GTF/GFFs");
 
