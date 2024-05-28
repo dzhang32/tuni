@@ -50,6 +50,9 @@ impl Cli {
     /// Returns [`FileReadError`](CliError::FileReadError) if the file 
     /// containing GTF/GFFs or any of the GTF/GFFs cannot be read.
     /// 
+    /// Returns [`FileEmptyError`](CliError::FileEmptyError) if the file 
+    /// containing GTF/GFFs is empty. 
+    /// 
     /// Returns [`GtfGffParseError`](CliError::GtfGffParseError) if any of the GTF/GFFs 
     /// do not exist or do not have the extension ".gtf"/".gff".
     pub fn parse_gtf_gff_paths(gtf_gff_path: PathBuf) -> Result<Vec<PathBuf>, CliError> {
