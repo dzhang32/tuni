@@ -1,0 +1,2 @@
+tests/data/integration/sample_1.gff
+tests/data/integration/sample_2.gff
