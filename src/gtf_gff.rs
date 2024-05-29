@@ -214,11 +214,17 @@ pub fn read_gtf_gff(
 ///
 /// # Errors
 ///
+/// Returns [`UnknownExtensionError`](GtfGffError::UnknownExtensionError) if any
+/// input file does not have a "gtf" or "gff" extension.
+///
 /// Returns [`FileCreateError`](GtfGffError::FileCreateError) if the output file
 /// cannot be be created.
 ///
 /// Returns [`LineReadError`](GtfGffError::LineReadError) if any line in the
 /// GTF/GFF cannot be read.
+///
+/// Returns [`FileWriteError`](GtfGffError::FileWriteError) if any line in
+/// the output GTF/GFF cannot be written.
 pub fn write_unified_gtf_gff(
     gtf_gff_extension: &str,
     gtf_gff_path: &Path,
