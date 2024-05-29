@@ -41,6 +41,12 @@ pub enum GtfGffError {
     #[error("UnknownFeatureError: Feature must be 'exon' or 'CDS', found {0:?}.")]
     UnknownFeatureError(String),
 
+    /// `tuni` checks files have the "gtf"/"gff" extension at the cli parsing
+    /// stage. Therefore, if this error appears, it likely points to a tuni bug
+    /// in cli parsing.
+    #[error("UnknownFeatureError: Feature must be 'exon' or 'CDS', found {0:?}.")]
+    UnknownExtensionError(String),
+
     /// The line from the GTF/GFF could not be read.
     #[error("LineReadError: Unable to read line in {0:?}")]
     LineReadError(PathBuf),

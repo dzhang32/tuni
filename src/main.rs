@@ -35,7 +35,7 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
     // Due to <https://github.com/clap-rs/clap/issues/4808>, value_parser cannot
     // directly use this function.
-    let gtf_gff_paths = Cli::parse_gtf_gff_paths(cli.gtf_gff_path)?;
+    let (gtf_gff_extension, gtf_gff_paths) = Cli::parse_gtf_gff_paths(cli.gtf_gff_path)?;
 
     info!("Reading GTF/GFFs");
 
@@ -52,7 +52,12 @@ fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     info!("Writing unified transcripts");
 
     for gtf_gff_path in &gtf_gff_paths {
-        gtf_gff::write_unified_gtf_gff(gtf_gff_path, &cli.output_dir, &transcript_unifier)?
+        gtf_gff::write_unified_gtf_gff(
+            &gtf_gff_extension,
+            gtf_gff_path,
+            &cli.output_dir,
+            &transcript_unifier,
+        )?
     }
 
     info!("Done");

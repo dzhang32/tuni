@@ -143,6 +143,28 @@ impl GtfGffRecord {
     }
 }
 
+enum TuniIdFormatter {
+    Gtf,
+    Gff,
+}
+
+impl TuniIdFormatter {
+    fn from(gtf_gff_extension: &str) -> Result<TuniIdFormatter, GtfGffError> {
+        match gtf_gff_extension {
+            "gtf" => Ok(TuniIdFormatter::Gtf),
+            "gff" => Ok(TuniIdFormatter::Gff),
+            other => Err(GtfGffError::UnknownExtensionError(other.to_string())),
+        }
+    }
+
+    fn format(&self, unified_id: &str) -> String {
+        match self {
+            TuniIdFormatter::Gtf => format!(r#" tuni_id "{}";"#, unified_id),
+            TuniIdFormatter::Gff => format!(" tuni_id={};", unified_id),
+        }
+    }
+}
+
 /// Read unique transcripts from a GTF/GFF file.
 ///
 /// Using the "transcript_id" as a differentiating key, build a
@@ -198,6 +220,7 @@ pub fn read_gtf_gff(
 /// Returns [`LineReadError`](GtfGffError::LineReadError) if any line in the
 /// GTF/GFF cannot be read.
 pub fn write_unified_gtf_gff(
+    gtf_gff_extension: &str,
     gtf_gff_path: &Path,
     output_dir: &Path,
     transcript_unifier: &TranscriptUnifier,
@@ -213,6 +236,8 @@ pub fn write_unified_gtf_gff(
     let reader = open_gtf_gff_reader(gtf_gff_path);
     let mut writer = open_gtf_gff_writer(&output_path)?;
 
+    let tuni_id_formatter = TuniIdFormatter::from(gtf_gff_extension)?;
+
     for line in reader.lines() {
         let mut line = line.map_err(|_| GtfGffError::LineReadError(gtf_gff_path.to_path_buf()))?;
 
@@ -225,7 +250,7 @@ pub fn write_unified_gtf_gff(
                     .get_unified_id(&[Rc::clone(&gtf_gff_file_name), Rc::from(transcript_id)]);
 
                 match unified_id {
-                    Some(unified_id) => line.push_str(&format!(r#" tuni_id "{}";"#, unified_id)),
+                    Some(unified_id) => line.push_str(&tuni_id_formatter.format(unified_id)),
                     None => warn!("Unrecognised transcript ID found {}", transcript_id),
                 }
             }
@@ -400,7 +425,7 @@ mod tests {
 
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("sample_1.tuni.gtf");
-        write_unified_gtf_gff(&gtf_gff_path, temp_dir.path(), &transcript_unifier).unwrap();
+        write_unified_gtf_gff("gtf", &gtf_gff_path, temp_dir.path(), &transcript_unifier).unwrap();
 
         // .collect() as <Vec<&str>> for easier debugging.
         assert_eq!(

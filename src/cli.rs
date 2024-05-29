@@ -55,7 +55,7 @@ impl Cli {
     /// 
     /// Returns [`GtfGffParseError`](CliError::GtfGffParseError) if any of the GTF/GFFs 
     /// do not exist or do not have the extension ".gtf"/".gff".
-    pub fn parse_gtf_gff_paths(gtf_gff_path: PathBuf) -> Result<Vec<PathBuf>, CliError> {
+    pub fn parse_gtf_gff_paths(gtf_gff_path: PathBuf) -> Result<(String, Vec<PathBuf>), CliError> {
         let gtf_gff_paths = fs::read_to_string(&gtf_gff_path)
             .map_err(|_| CliError::FileReadError(gtf_gff_path.clone()))?
             .lines()
@@ -83,7 +83,8 @@ impl Cli {
             File::open(gtf_gff_path).map_err(|_| CliError::FileReadError(gtf_gff_path.clone()))?;
         }
 
-        Ok(gtf_gff_paths)
+        // gtf_gff_extension has been checked above to be be "gtf"/"gff".
+        Ok((gtf_gff_extension.to_os_string().into_string().unwrap(), gtf_gff_paths))
     }
 
     /// Parse output directory.
