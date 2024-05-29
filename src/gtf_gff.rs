@@ -235,7 +235,7 @@ pub fn write_unified_gtf_gff(
 
     let mut output_path = output_dir.to_path_buf();
     output_path.push(gtf_gff_file_name.to_string());
-    output_path.set_extension("tuni.gtf");
+    output_path.set_extension(format!("tuni.{}", gtf_gff_extension));
 
     info!("{}", output_path.display());
 
