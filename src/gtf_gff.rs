@@ -143,12 +143,19 @@ impl GtfGffRecord {
     }
 }
 
+/// Format outputted unified ID.
 enum TuniIdFormatter {
     Gtf,
     Gff,
 }
 
 impl TuniIdFormatter {
+    /// Create output formatter depending on input file type.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`UnknownExtensionError`](GtfGffError::UnknownExtensionError) if
+    /// the provided extension is not "gtf"/"gff".
     fn from(gtf_gff_extension: &str) -> Result<TuniIdFormatter, GtfGffError> {
         match gtf_gff_extension {
             "gtf" => Ok(TuniIdFormatter::Gtf),
@@ -157,6 +164,7 @@ impl TuniIdFormatter {
         }
     }
 
+    /// Format unified ID depending on input file type.
     fn format(&self, unified_id: &str) -> String {
         match self {
             TuniIdFormatter::Gtf => format!(r#" tuni_id "{}";"#, unified_id),
