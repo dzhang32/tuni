@@ -1,3 +1,4 @@
+
 mod cli;
 mod error;
 mod gtf_gff;
@@ -11,6 +12,8 @@ use std::process;
 use cli::Cli;
 use unify::TranscriptUnifier;
 
+/// Responsible for parsing cli arguments, setting the log level and 
+/// printing errors.
 fn main() {
     let cli = Cli::parse();
 
@@ -31,6 +34,7 @@ fn main() {
     }
 }
 
+/// Executes tuni, prints top-level logs and returns unrecoverable errors.
 fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
     let mut transcript_unifier = TranscriptUnifier::new();
     // Due to <https://github.com/clap-rs/clap/issues/4808>, value_parser cannot
