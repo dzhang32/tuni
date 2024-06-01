@@ -1,3 +1,5 @@
+//! Group and unify transcripts across samples.
+
 use crate::gtf_gff::{TranscriptId, TranscriptSignature};
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
