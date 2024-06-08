@@ -1,4 +1,3 @@
-
 mod cli;
 mod error;
 mod gtf_gff;
@@ -12,7 +11,7 @@ use std::process;
 use cli::Cli;
 use unify::TranscriptUnifier;
 
-/// Responsible for parsing cli arguments, setting the log level and 
+/// Responsible for parsing cli arguments, setting the log level and
 /// printing errors.
 fn main() {
     let cli = Cli::parse();
