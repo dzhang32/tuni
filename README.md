@@ -1,5 +1,7 @@
 # tuni
 
+[![ci](https://github.com/dzhang32/tuni/workflows/lint-test-package/badge.svg)](https://github.com/dzhang32/tuni/actions)
+
 The goal of `tuni` is to unify transcripts across different samples.
 
 ## Overview
