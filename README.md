@@ -1,5 +1,6 @@
 # tuni
 
+![crates](https://img.shields.io/crates/v/tuni)
 [![ci](https://github.com/dzhang32/tuni/workflows/lint-test-package/badge.svg)](https://github.com/dzhang32/tuni/actions)
 
 The goal of `tuni` is to unify transcripts across different samples.
@@ -52,12 +53,23 @@ chr1 test exon 50 100 . + . transcript_id "B"; tuni_id "tuni_0";
 
 ## Installation
 
-TODO: upload `tuni` to crates.io.
+Install [Rust](https://doc.rust-lang.org/book/ch01-01-installation.html) then run:
+
+```bash
+cargo install tuni
+```
 
 ## Usage
 
 ```bash
-tuni -gtf-gff-path /path/to/gtf_paths.txt -output-dir /path/to/output/directory/
+Usage: tuni [OPTIONS] --gtf-gff-path <*.txt> --output-dir </output/dir/>
+
+Options:
+  -g, --gtf-gff-path <*.txt>       A text file containing GTF/GFF paths
+  -o, --output-dir </output/dir/>  Directory where outputted GTF/GFFs will be stored
+  -v, --verbose                    Print log messages
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 *Note: currently, only [version 2](https://www.ensembl.org/info/website/upload/gff.html) `.gff` files are accepted by `tuni`.*
