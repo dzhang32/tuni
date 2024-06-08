@@ -1,6 +1,7 @@
 [package]
 name = "tuni"
 version = "0.1.0"
+edition = "2021"
 authors = ["David Zhang <dyzhang32@gmail.com>"]
 description = "Unify transcripts across different samples"
 license = "MIT"
