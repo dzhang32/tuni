@@ -1,12 +1,12 @@
 # tuni
 
-The goal of `tuni` is to generate unified IDs for identical transcripts called across different samples.
+The goal of `tuni` is to unify transcripts across different samples.
 
-## Background
+## Overview
 
-Transcript assembly tools can generate arbitary transcript IDs that differ between identical transcripts across samples.
+Transcript assembly tools can generate arbitary transcript IDs, which may lead to the same transcript being labelled with a different ID across samples.
 
-For instance, given two samples, `sample_1.gtf` and `sample_2.gtf`:
+For example, given two samples `sample_1.gtf` and `sample_2.gtf`:
 
 **sample_1.gtf**
 
@@ -28,7 +28,7 @@ chr1 test exon 50 100 . + . transcript_id "B";
 
 The transcript displayed above is identical between the two samples, however the provided `transcript_id` is different for each sample, "A" vs "B".
 
-Given a list of `.gtf`/`.gff` files, `tuni` outputs a `tuni_id` that is unified for identical transcripts across different samples.
+`tuni` generates a `.tuni.gtf`/`.tuni.gff` for each input `.gtf`/`.gff`. These output files will contain an additional attribute field `tuni_id` which contains a unified ID that will be same for identical transcripts across different samples.
 
 **sample_1.tuni.gtf**
 
@@ -54,15 +54,8 @@ TODO: upload `tuni` to crates.io.
 
 ## Usage
 
-`tuni` expects as input:
-
-1. A `.txt` file that contains the paths to each input `.gtf` or `.gff` detailing transcripts to be unified. Currently, only [version 2](https://www.ensembl.org/info/website/upload/gff.html) `.gff` files are accepted.
-2. A path to the output directory.
-
-Executing `tuni`:
-
 ```bash
 tuni -gtf-gff-path /path/to/gtf_paths.txt -output-dir /path/to/output/directory/
 ```
 
-In the output directory, `tuni` will create a `.tuni.gtf`/`.tuni.gff` for each input `.gtf`/`.gff`. These `.tuni.*` output files will contain an additional attribute field `tuni_id` which contains unified ID that will be same for identical transcripts across different samples.
+*Note: currently, only [version 2](https://www.ensembl.org/info/website/upload/gff.html) `.gff` files are accepted by `tuni`.*
