@@ -6,16 +6,13 @@ use std::{fs, fs::File, path::PathBuf};
 
 /// Parse and check input arguments.
 #[derive(Parser)]
-#[command(
-    version,
-    about = "tuni: Unify transcripts outputted by transcript assembly tools"
-)]
+#[command(version, about = "tuni: Unify transcripts across different samples")]
 pub struct Cli {
     /// A text file containing GTF/GFF paths.
     #[arg(short, long, value_name = "*.txt", required = true)]
     pub gtf_gff_path: PathBuf,
 
-    /// Directory where outputted GTF/GFFs with unified transcripts will be stored.
+    /// Directory where outputted GTF/GFFs will be stored.
     #[arg(
         short,
         long,
