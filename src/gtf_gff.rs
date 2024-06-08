@@ -18,7 +18,7 @@ pub type TranscriptId = Rc<str>;
 /// If any fields are different between two `TranscriptSignature`s, they
 /// must represent distinct transcripts. Both exons AND CDS regions must be
 /// included to differentiate between transcripts that have:
-/// 1. The same coding regions and different UTR.
+/// 1. The same coding regions and different UTRs.
 /// 2. The same UTRs and different coding regions.
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TranscriptSignature {
