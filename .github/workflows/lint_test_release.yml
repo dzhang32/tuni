@@ -18,16 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        target:
-          [x86_64-unknown-linux-gnu, x86_64-apple-darwin, aarch64-apple-darwin]
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: macos-latest
-            target: x86_64-apple-darwin
-          - os: macos-latest
-            target: aarch64-apple-darwin
+        os: [ubuntu-latest, macos-latest, macos-latest-large]
 
     steps:
       - name: Checkout code
@@ -52,13 +43,13 @@ jobs:
         run: cargo test
 
       - name: Build binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: tuni-${{ matrix.os }}-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/tuni
+          name: tuni-${{ matrix.os }}
+          path: target/release/tuni
 
   release:
     runs-on: ubuntu-latest
@@ -68,23 +59,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Download build artifacts for Linux x86_64
+      - name: Download build artifacts (Linux)
         uses: actions/download-artifact@v3
         with:
-          name: tuni-ubuntu-latest-x86_64-unknown-linux-gnu
-          path: ./artifacts/ubuntu-x86_64
+          name: tuni-ubuntu-latest
+          path: ./artifacts/ubuntu
 
-      - name: Download build artifacts for macOS Intel
+      - name: Download build artifacts (macOS ARM)
         uses: actions/download-artifact@v3
         with:
-          name: tuni-macos-latest-x86_64-apple-darwin
-          path: ./artifacts/macos-x86_64
+          name: tuni-macos-latest
+          path: ./artifacts/macos
 
-      - name: Download build artifacts for macOS ARM
+      - name: Download build artifacts (macOS Intel)
         uses: actions/download-artifact@v3
         with:
-          name: tuni-macos-latest-aarch64-apple-darwin
-          path: ./artifacts/macos-aarch64
+          name: tuni-macos-latest-large
+          path: ./artifacts/macos-large
 
       - name: Create GitHub Release
         id: create_release
@@ -97,24 +88,14 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Asset (Linux x86_64)
+      - name: Upload Release Asset (Linux)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/ubuntu-x86_64/tuni
+          asset_path: ./artifacts/ubuntu/tuni
           asset_name: tuni_linux
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset (macOS Intel)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/macos-x86_64/tuni
-          asset_name: tuni_macos_intel
           asset_content_type: application/octet-stream
 
       - name: Upload Release Asset (macOS ARM)
@@ -123,6 +104,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/macos-aarch64/tuni
+          asset_path: ./artifacts/macos/tuni
           asset_name: tuni_macos_arm
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset (macOS Intel)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/macos-large/tuni
+          asset_name: tuni_macos_intel
           asset_content_type: application/octet-stream
