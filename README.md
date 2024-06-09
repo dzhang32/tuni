@@ -61,7 +61,7 @@ cargo install tuni
 
 ## Usage
 
-```bash
+```rust
 Usage: tuni [OPTIONS] --gtf-gff-path <*.txt> --output-dir </output/dir/>
 
 Options:
