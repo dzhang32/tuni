@@ -19,6 +19,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, macos-latest-large]
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: macos-latest-large
 
     steps:
       - name: Checkout code
