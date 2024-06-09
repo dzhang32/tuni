@@ -53,6 +53,12 @@ chr1 test exon 50 100 . + . transcript_id "B"; tuni_id "tuni_0";
 
 ## Installation
 
+### Binary
+
+Download the latest binary for linux/macos from [releases](https://github.com/dzhang32/tuni/releases).
+
+### Cargo
+
 Install [Rust](https://doc.rust-lang.org/book/ch01-01-installation.html) then run:
 
 ```bash
@@ -61,7 +67,7 @@ cargo install tuni
 
 ## Usage
 
-```rust
+```bash
 Usage: tuni [OPTIONS] --gtf-gff-path <*.txt> --output-dir </output/dir/>
 
 Options:
