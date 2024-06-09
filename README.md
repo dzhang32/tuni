@@ -55,7 +55,7 @@ chr1 test exon 50 100 . + . transcript_id "B"; tuni_id "tuni_0";
 
 ### Binary
 
-Download the latest binary for linux/macos from [releases](https://github.com/dzhang32/tuni/releases).
+Download the latest binary for Linux or macOS (ARM) from [releases](https://github.com/dzhang32/tuni/releases).
 
 ### Cargo
 
